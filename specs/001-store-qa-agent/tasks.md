@@ -23,14 +23,14 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 **Purpose**: Inicialização do projeto, versionamento real (FR-013) e decisões arquiteturais registradas (constituição Princípio V)
 
-- [ ] T001 Initialize git repository at repo root; create `.gitignore` excluding `.env`, `data/runtime/`, `.venv/`, `__pycache__/`, `.DS_Store`; make initial commit (FR-013 exige histórico real de commits — começa aqui)
-- [ ] T002 [P] Create `pyproject.toml` via `uv init` with Python 3.11+ and pinned deps: `deepagents`, `langgraph`, `langgraph-checkpoint-sqlite`, `langchain-openai`, `pydantic`, `pydantic-settings`, `gradio`, `chromadb`, `pypdf`; dev group: `pytest`, `ruff`; add `[tool.pytest.ini_options]` with marker `eval` (tests requiring OPENAI_API_KEY). ANTES de pinar, consultar no context7/documentação oficial as versões estáveis atuais de cada pacote e de suas APIs usadas no design (constituição Princípio I — Evidência ou Nada: proibido assumir versão/comportamento sem consultar a doc vigente)
-- [ ] T003 [P] Create `.env.example` with keys (sem valores reais): `OPENAI_API_KEY`, `OPENAI_MODEL`, `RAG_MIN_SCORE`
-- [ ] T004 [P] Copy the 6 CSVs and `políticas_da_loja.pdf` from `Desafio Técnico AI Engineer 2026 2/data/` into `data/source/` (fonte versionada)
-- [ ] T005 [P] Create `docs/adrs/README.md` and `docs/learning-lessons/README.md` com formato de índice (constituição Princípio V — Conhecimento Vivo)
-- [ ] T006 [P] Write `docs/adrs/0001-runtime-single-container.md` from research.md D2: in-process runtime + AsyncSqliteSaver vs LangGraph Server oficial (consequências: 1 chave para o avaliador, SQLite viável, upgrade path via `langgraph build`, trade-offs documentados)
-- [ ] T007 [P] Write `docs/adrs/0002-arquitetura-hibrida-tools-rag.md` from research.md D1+D4: deepagents com backend podado + function calling sobre SQLite + RAG ChromaDB com mitigações FP1–FP7
-- [ ] T008 Commit setup phase (commits pequenos e reais — FR-013)
+- [x] T001 Initialize git repository at repo root; create `.gitignore` excluding `.env`, `data/runtime/`, `.venv/`, `__pycache__/`, `.DS_Store`; make initial commit (FR-013 exige histórico real de commits — começa aqui)
+- [x] T002 [P] Create `pyproject.toml` via `uv init` with Python 3.11+ and pinned deps: `deepagents`, `langgraph`, `langgraph-checkpoint-sqlite`, `langchain-openai`, `pydantic`, `pydantic-settings`, `gradio`, `chromadb`, `pypdf`; dev group: `pytest`, `ruff`; add `[tool.pytest.ini_options]` with marker `eval` (tests requiring OPENAI_API_KEY). ANTES de pinar, consultar no context7/documentação oficial as versões estáveis atuais de cada pacote e de suas APIs usadas no design (constituição Princípio I — Evidência ou Nada: proibido assumir versão/comportamento sem consultar a doc vigente)
+- [x] T003 [P] Create `.env.example` with keys (sem valores reais): `OPENAI_API_KEY`, `OPENAI_MODEL`, `RAG_MIN_SCORE`
+- [x] T004 [P] Copy the 6 CSVs and `políticas_da_loja.pdf` from `Desafio Técnico AI Engineer 2026 2/data/` into `data/source/` (fonte versionada)
+- [x] T005 [P] Create `docs/adrs/README.md` and `docs/learning-lessons/README.md` com formato de índice (constituição Princípio V — Conhecimento Vivo)
+- [x] T006 [P] Write `docs/adrs/0001-runtime-single-container.md` from research.md D2: in-process runtime + AsyncSqliteSaver vs LangGraph Server oficial (consequências: 1 chave para o avaliador, SQLite viável, upgrade path via `langgraph build`, trade-offs documentados)
+- [x] T007 [P] Write `docs/adrs/0002-arquitetura-hibrida-tools-rag.md` from research.md D1+D4: deepagents com backend podado + function calling sobre SQLite + RAG ChromaDB com mitigações FP1–FP7
+- [x] T008 Commit setup phase (commits pequenos e reais — FR-013)
 
 ---
 
