@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Segredos e ambiente (nunca commitar)
+.env
+
+# Dados gerados em runtime (SQLite, Chroma)
+data/runtime/
+
+# Material original do desafio (copiado com nomes limpos para data/source/)
+Desafio Técnico AI Engineer 2026 2/
+
+# OS
+.DS_Store
