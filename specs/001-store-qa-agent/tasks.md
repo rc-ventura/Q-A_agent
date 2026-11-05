@@ -73,13 +73,13 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Tests first (TDD)
 
-- [ ] T024 [US1] Write failing unit test `tests/unit/test_tools_catalog.py` cobrindo o contrato `contracts/tools.contract.md` §1–2 verbatim: `search_products(query, category, max_price_brl=None, in_stock_only=True, limit=5)` — fuzzy com normalização de acentos ("violao" casa "Violões"); "violões até 1000" inclui Yamaha C40 R$ 599,90; produto em promoção ativa traz `active_promotion {discount_percent, final_price_brl}` somente se `is_active=1` (produto 127, 10%); `get_product_details("Takamine GD20")` → preço 2199.0 e estoque 5; produto inexistente → `{"error": "not_found", "did_you_mean": [...]}`; Giannini GF-3D aparece com estoque 0 quando `in_stock_only=False`
+- [x] T024 [US1] Write failing unit test `tests/unit/test_tools_catalog.py` cobrindo o contrato `contracts/tools.contract.md` §1–2 verbatim: `search_products(query, category, max_price_brl=None, in_stock_only=True, limit=5)` — fuzzy com normalização de acentos ("violao" casa "Violões"); "violões até 1000" inclui Yamaha C40 R$ 599,90; produto em promoção ativa traz `active_promotion {discount_percent, final_price_brl}` somente se `is_active=1` (produto 127, 10%); `get_product_details("Takamine GD20")` → preço 2199.0 e estoque 5; produto inexistente → `{"error": "not_found", "did_you_mean": [...]}`; Giannini GF-3D aparece com estoque 0 quando `in_stock_only=False`
 
 ### Implementation
 
-- [ ] T025 [US1] Implement `agent/tools/catalog.py`: `search_products` + `get_product_details` com args validados por Pydantic, SQL read-only via `agent/tools/db.py`, join com `v_active_promotions`, docstrings completas (constituição VI — é o contrato que o LLM lê) — passar T024
-- [ ] T026 [US1] Registrar os tools de catálogo em `agent/graph.py` e estender `agent/prompt.py` com regras específicas de catálogo: sempre exibir original+%+final quando promoção ativa; promoção vencida → transparência + preço atual (US1 cenário 4); sem estoque → alternativas em estoque (FR-007)
-- [ ] T027 [US1] Commit US1
+- [x] T025 [US1] Implement `agent/tools/catalog.py`: `search_products` + `get_product_details` com args validados por Pydantic, SQL read-only via `agent/tools/db.py`, join com `v_active_promotions`, docstrings completas (constituição VI — é o contrato que o LLM lê) — passar T024
+- [x] T026 [US1] Registrar os tools de catálogo em `agent/graph.py` e estender `agent/prompt.py` com regras específicas de catálogo: sempre exibir original+%+final quando promoção ativa; promoção vencida → transparência + preço atual (US1 cenário 4); sem estoque → alternativas em estoque (FR-007)
+- [x] T027 [US1] Commit US1
 
 **Checkpoint**: US1 testável isoladamente via tools (unit) — SC-001 aferível no nível dos tools
 

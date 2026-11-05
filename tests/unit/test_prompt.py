@@ -13,8 +13,9 @@ def test_dispatcher_markers():
     assert "(67) 3341-4444" in DISPATCHER_SYSTEM_PROMPT
 
 
-def test_catalog_promotion_format():  # FR-006
-    for marker in ["preco original", "percentual", "preco final"]:
+def test_catalog_promotion_format():  # FR-006 + US1 T026
+    for marker in ["preco original", "percentual", "preco final",
+                   "transparente", "sem estoque", "alternativas"]:
         assert marker in CATALOG.lower(), marker
 
 
