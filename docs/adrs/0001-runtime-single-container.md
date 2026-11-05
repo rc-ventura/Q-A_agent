@@ -2,7 +2,12 @@
 
 ## Status
 
-Aceito (2026-11-04)
+Aceito (2026-11-04), **ampliado em 2026-11-04**: mantido como **modo A**
+(primario, caminho do avaliador). O modo B — Agent Server do blueprint oficial
+(`langgraph build` + stack Postgres/Redis + agent-chat-ui) — passa a ser opcao
+documentada/executavel de escala, nao mais apenas upgrade path teorico
+(ver research.md D9 e ADR-0003). As razoes abaixo continuam validas para o
+modo A; as do modo B sao sua compensacao quando a escala for exigida.
 
 ## Contexto
 
