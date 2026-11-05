@@ -1,0 +1,39 @@
+import asyncio
+
+from agent.graph import build_agent, specialist_tools
+from agent.prompt import DISPATCHER_SYSTEM_PROMPT
+from agent.settings import Settings
+
+
+def _settings(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-unit-test-sem-rede")
+    return Settings()
+
+
+def test_dispatcher_exposes_only_specialist_tools(monkeypatch):
+    tools = specialist_tools(_settings(monkeypatch))
+    names = {t.name for t in tools}
+    assert names == {
+        "specialist_catalog",
+        "specialist_policies",
+        "specialist_orders",
+        "specialist_service",
+    }
+    forbidden = {"write_file", "edit_file", "read_file", "execute", "ls", "glob", "grep"}
+    assert not names & forbidden
+
+
+def test_tool_descriptions_are_declarative(monkeypatch):
+    for t in specialist_tools(_settings(monkeypatch)):
+        assert t.description and "Passe a pergunta" in t.description
+
+
+def test_prompt_has_persona_and_hard_rules():
+    assert "Emporio da Musica" in DISPATCHER_SYSTEM_PROMPT
+    for rule in ["Nunca invente", "transacionais", "LGPD", "(67) 3341-4444"]:
+        assert rule in DISPATCHER_SYSTEM_PROMPT
+
+
+def test_build_agent_compiles_without_checkpointer(monkeypatch):
+    graph = build_agent(settings=_settings(monkeypatch))
+    assert graph is not None

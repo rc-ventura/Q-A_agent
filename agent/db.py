@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_promos_product ON promotions(product_id);
 def init_schema(conn: sqlite3.Connection) -> None:
     """Cria o schema SQLite (idempotente) com constraints de integridade."""
     conn.executescript(SCHEMA)
+    conn.executescript(ACTIVE_PROMOTIONS_VIEW)
 
 
 def connect_readonly(path) -> sqlite3.Connection:
@@ -38,3 +39,19 @@ def connect_readonly(path) -> sqlite3.Connection:
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+ACTIVE_PROMOTIONS_VIEW = """
+CREATE VIEW IF NOT EXISTS v_active_promotions AS
+SELECT p.product_id, p.name, p.price_brl, pr.discount_percent,
+       round(p.price_brl * (1 - pr.discount_percent / 100.0), 2) AS final_price_brl,
+       pr.description AS promotion_description
+FROM products p
+JOIN promotions pr ON pr.product_id = p.product_id
+WHERE pr.is_active = 1;
+"""
+
+
+def create_views(conn: sqlite3.Connection) -> None:
+    """Cria a view de promocoes ativas (preco final calculado no SQL)."""
+    conn.executescript(ACTIVE_PROMOTIONS_VIEW)
