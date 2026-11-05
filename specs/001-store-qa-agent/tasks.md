@@ -113,13 +113,13 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Tests first (TDD)
 
-- [ ] T032 [US3] Write failing unit test `tests/unit/test_tools_orders.py` cobrindo `contracts/tools.contract.md` §4–5 verbatim: `find_customer(name=None, email=None)` (ao menos um obrigatório) — busca por nome case/acento-insensível; retorna `{matches: [{customer_id, name, city}]}` SEM e-mail/telefone (minimização LGPD); 0 matches → `{"matches": []}`; nome ambíguo → múltiplos candidatos; `list_customer_orders(customer_id)` — cliente 3 retorna orders #3 delivered (tracking_code BRDZ4561230BR, estimated_delivery presente) e #19 cancelled com `notes`; `tracking_code` aparece somente quando presente; pedido cancelado sempre acompanhado de `notes` quando houver; inclui itens (nomes de produtos)
+- [x] T032 [US3] Write failing unit test `tests/unit/test_tools_orders.py` cobrindo `contracts/tools.contract.md` §4–5 verbatim: `find_customer(name=None, email=None)` (ao menos um obrigatório) — busca por nome case/acento-insensível; retorna `{matches: [{customer_id, name, city}]}` SEM e-mail/telefone (minimização LGPD); 0 matches → `{"matches": []}`; nome ambíguo → múltiplos candidatos; `list_customer_orders(customer_id)` — cliente 3 retorna orders #3 delivered (tracking_code BRDZ4561230BR, estimated_delivery presente) e #19 cancelled com `notes`; `tracking_code` aparece somente quando presente; pedido cancelado sempre acompanhado de `notes` quando houver; inclui itens (nomes de produtos)
 
 ### Implementation
 
-- [ ] T033 [US3] Implement `agent/tools/orders.py`: `find_customer` + `list_customer_orders` com Pydantic args e SQL read-only via `agent/tools/db.py`, docstrings completas — passar T032
-- [ ] T034 [US3] Registrar tools de pedidos em `agent/graph.py` e estender `agent/prompt.py`: FR-005 verbatim (identificar antes de expor; ambíguo → esclarecimento); múltiplos pedidos apresentados com clareza; cancelamento sempre explica o motivo das `notes`
-- [ ] T035 [US3] Commit US3
+- [x] T033 [US3] Implement `agent/tools/orders.py`: `find_customer` + `list_customer_orders` com Pydantic args e SQL read-only via `agent/tools/db.py`, docstrings completas — passar T032
+- [x] T034 [US3] Registrar tools de pedidos em `agent/graph.py` e estender `agent/prompt.py`: FR-005 verbatim (identificar antes de expor; ambíguo → esclarecimento); múltiplos pedidos apresentados com clareza; cancelamento sempre explica o motivo das `notes`
+- [x] T035 [US3] Commit US3
 
 **Checkpoint**: US1 + US2 + US3 funcionam independentemente
 

@@ -24,9 +24,9 @@ def test_policies_only_from_manual():  # FR-003 + FR-011 (T030)
         assert marker in POLICIES.lower(), marker
 
 
-def test_orders_no_transactions_and_human_escalation():  # FR-012
-    assert "transacionais" in ORDERS.lower()
-    assert "(67) 3341-4444" in ORDERS
+def test_orders_no_transactions_and_human_escalation():  # FR-012 + FR-005 (T034)
+    for marker in ["transacionais", "(67) 3341-4444", "esclarecimento", "notes"]:
+        assert marker in ORDERS.lower(), marker
 
 
 def test_service_scope():
