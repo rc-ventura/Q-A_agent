@@ -99,7 +99,13 @@ def test_golden5_orders_with_cancellation_reason(agent):
     assert_reply(
         reply,
         required=["brab1234567br", "cancelad", "pagamento"],
+        forbidden=["7 unidades"],
     )
+
+
+def test_order_lookup_asks_for_name_or_email_never_phone(agent):
+    reply = agent.ask("Cadê meu pedido?")
+    assert_reply(reply, required=[("nome", "e-mail", "email")], forbidden=["telefone"])
 
 
 def test_unknown_customer_is_not_invented(agent):

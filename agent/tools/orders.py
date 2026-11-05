@@ -56,7 +56,7 @@ def make_orders_tools(db_path: str) -> list:
         """Lista os pedidos de um cliente já identificado por find_customer.
 
         Cada pedido traz order_id, status, order_date, total_brl,
-        payment_method e items (nomes dos produtos). tracking_code e
+        payment_method e items ([{name, quantity}] com nome e quantidade de cada produto). tracking_code e
         estimated_delivery aparecem só quando existem; cancelled traz o
         motivo em notes quando houver. Retorna {"orders": [...]}.
         """
@@ -72,16 +72,18 @@ def make_orders_tools(db_path: str) -> list:
                 (customer_id,),
             ).fetchall()
             items = conn.execute(
-                "SELECT oi.order_id, p.name FROM order_items oi"
+                "SELECT oi.order_id, p.name, oi.quantity FROM order_items oi"
                 " JOIN products p ON p.product_id = oi.product_id"
                 " WHERE oi.order_id IN (SELECT order_id FROM orders WHERE customer_id = ?)",
                 (customer_id,),
             ).fetchall()
         finally:
             conn.close()
-        items_by_order: dict[int, list[str]] = {}
+        items_by_order: dict[int, list[dict]] = {}
         for it in items:
-            items_by_order.setdefault(it["order_id"], []).append(it["name"])
+            items_by_order.setdefault(it["order_id"], []).append(
+                {"name": it["name"], "quantity": it["quantity"]}
+            )
         result = []
         for o in orders:
             entry = {

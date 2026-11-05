@@ -36,7 +36,7 @@ Identificação do cliente (passo 1 do atendimento de pedidos).
 Pedidos de um cliente identificado.
 
 **Args**: `customer_id: int`
-**Retorna**: pedidos `{order_id, order_date, status, total_brl, payment_method, tracking_code?, estimated_delivery?, notes?}` + itens (nomes de produtos).
+**Retorna**: pedidos `{order_id, order_date, status, total_brl, payment_method, tracking_code?, estimated_delivery?, notes?}` + itens (`items: [{name, quantity}]`).
 **Garantias**: tracking exibido só quando presente; pedido `cancelled` sempre acompanhado de `notes` quando houver.
 
 ## 6. (Opcional P3) `get_store_info`

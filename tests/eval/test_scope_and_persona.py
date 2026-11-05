@@ -22,7 +22,7 @@ def test_out_of_scope_cordial_refusal(agent):
     assert_reply(
         reply,
         required=[("escopo", "instrumentos", "empório", "loja", "ajudar")],
-        forbidden=["ottawa"],
+        forbidden=["ottawa", "acessório"],
     )
 
 

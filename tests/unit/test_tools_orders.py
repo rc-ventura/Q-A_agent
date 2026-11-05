@@ -62,10 +62,17 @@ def test_orders_delivered_and_cancelled(tools):
     assert "tracking_code" not in cancelled  # vazio nao aparece
 
 
-def test_orders_include_item_names(tools):
+def test_orders_include_item_names_and_quantities(tools):
     res = _run(tools["list_customer_orders"], customer_id=3)
-    assert all(len(o["items"]) >= 1 for o in res["orders"])
-    assert all(isinstance(p, str) and p for o in res["orders"] for p in o["items"])
+    by_id = {o["order_id"]: o for o in res["orders"]}
+    assert by_id[1]["items"] == [{"name": "Martin D-28 Dreadnought Natural", "quantity": 1}]
+    assert by_id[19]["items"] == [{"name": "Taylor 214ce Elétrico Aço Natural", "quantity": 1}]
+
+
+def test_orders_quantity_reflects_more_than_one_unit(tools):
+    res = _run(tools["list_customer_orders"], customer_id=12)
+    order = next(o for o in res["orders"] if o["order_id"] == 3)
+    assert order["items"][0]["quantity"] == 2
 
 
 def test_orders_unknown_customer(tools):

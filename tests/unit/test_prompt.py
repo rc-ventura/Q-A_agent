@@ -6,7 +6,7 @@ from agent.specialists.service_agent import SYSTEM_PROMPT as SERVICE
 
 
 def test_dispatcher_markers():
-    assert "Emporio da Musica" in DISPATCHER_SYSTEM_PROMPT
+    assert "Empório da Música" in DISPATCHER_SYSTEM_PROMPT
     assert "Nunca invente" in DISPATCHER_SYSTEM_PROMPT  # FR-002
     assert "fora do escopo" in DISPATCHER_SYSTEM_PROMPT  # FR-009
     assert "transacionais" in DISPATCHER_SYSTEM_PROMPT  # FR-012
@@ -51,3 +51,15 @@ def test_catalog_always_reports_stock_and_handles_named_campaigns():
     prompt = CATALOG.lower()
     for marker in ["sempre", "unidades em estoque", "campanha", "nao esta vigente"]:
         assert marker in prompt, marker
+
+
+def test_orders_identifies_by_name_or_email_never_phone_and_never_guesses_quantity():  # FR-005, LGPD
+    prompt = ORDERS.lower()
+    for marker in ["nome completo ou e-mail", "nunca peca telefone", "quantity"]:
+        assert marker in prompt, marker
+    assert "nome/telefone" not in prompt
+
+
+def test_dispatcher_never_offers_accessories():  # FR-008
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "nunca ofereca" in prompt and "acessorios" in prompt.split("nunca ofereca")[1][:80]

@@ -29,7 +29,7 @@ def test_tool_descriptions_are_declarative(monkeypatch):
 
 
 def test_prompt_has_persona_and_hard_rules():
-    assert "Emporio da Musica" in DISPATCHER_SYSTEM_PROMPT
+    assert "Empório da Música" in DISPATCHER_SYSTEM_PROMPT
     for rule in ["Nunca invente", "transacionais", "LGPD", "(67) 3341-4444"]:
         assert rule in DISPATCHER_SYSTEM_PROMPT
 
