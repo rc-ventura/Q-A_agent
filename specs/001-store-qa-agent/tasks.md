@@ -42,7 +42,7 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Tests first (TDD — devem falhar antes da implementação)
 
-- [ ] T009 [P] Write failing unit test `tests/unit/test_settings.py`: `Settings` carrega de `.env`; `openai_api_key` ausente → `is_configured()` retorna False; defaults: `openai_model == "gpt-4o-mini"`, `rag_min_score == 0.25`; paths `data/runtime/`
+- [x] T009 [P] Write failing unit test `tests/unit/test_settings.py`: `Settings` carrega de `.env`; `openai_api_key` ausente → `is_configured()` retorna False; defaults: `openai_model == "gpt-4o-mini"`, `rag_min_score == 0.25`; paths `data/runtime/`
 - [ ] T010 [P] Write failing unit test `tests/unit/test_schema.py`: schema cria 6 tabelas + view `v_active_promotions`; CHECK constraints rejeitam violações citadas verbatim do data-model.md: `products.price_brl >= 0`, `products.stock_quantity >= 0`, `products.status IN ('active','inactive')`, `orders.status IN ('pending','confirmed','shipped','delivered','cancelled')`, `orders.total_brl >= 0`, `orders.tracking_code` NOT NULL apenas quando `status='shipped'`, `order_items.quantity > 0` com PK composta `(order_id, product_id)`, `promotions.discount_percent` com `0 < x <= 100`, `promotions.is_active IN (0,1)`
 - [ ] T011 [P] Write failing unit test `tests/unit/test_load_csv.py`: ingestão idempotente (rodar 2x não duplica); linha inválida → erro de startup com mensagem contendo arquivo + linha + campo (data-model.md: "falhar cedo"); contagens no banco == linhas dos CSVs em `data/source/`
 - [ ] T012 [P] Write failing unit test `tests/unit/test_load_policies.py`: PDF → chunks por seção do manual; metadados por chunk `{section_no, section_title, page}`; IDs determinísticos `policy_<seção>_<n>`; reingestão não duplica (idempotente)
@@ -50,7 +50,7 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Implementation (na ordem; cada uma depende do seu teste falhar)
 
-- [ ] T014 Implement `app/settings.py` com pydantic-settings: campos do T009 + `store_db_path`, `checkpoint_db_path`, `chroma_dir`, `data_source_dir`; método `is_configured()`; helper `save_api_key(key)` que grava `.env` e recarrega (base para F0/FR-016) — passar T009
+- [x] T014 Implement `app/settings.py` com pydantic-settings: campos do T009 + `store_db_path`, `checkpoint_db_path`, `chroma_dir`, `data_source_dir`; método `is_configured()`; helper `save_api_key(key)` que grava `.env` e recarrega (base para F0/FR-016) — passar T009
 - [ ] T015 Implement `ingestion/schema.py`: `create_schema(conn)` criando as 6 tabelas com as constraints verbatim do T010 (data-model.md) + view `v_active_promotions` (products ⋈ promotions `WHERE is_active=1`, com coluna `final_price_brl = round(price_brl * (1 - discount_percent/100), 2)`) — passar T010
 - [ ] T016 Implement `ingestion/load_csv.py`: lê os 6 CSVs de `data/source/`, valida cada linha com models Pydantic conforme regras do data-model.md (ex.: `email` contém `@`, FKs existem), insere em `data/runtime/store.sqlite` de forma transacional e idempotente; erro de validação aborta startup com arquivo+linha+campo — passar T011
 - [ ] T017 Implement `agent/tools/db.py`: helper `open_readonly()` que abre `store.sqlite` com URI `mode=ro` (regra transversal dos contratos: tools nunca escrevem) — usado por todos os tools de dados
