@@ -133,12 +133,12 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Tests first (TDD)
 
-- [ ] T036 [US4] Write failing eval test `tests/eval/test_scope_and_persona.py` (marker `eval`, requer OPENAI_API_KEY, skip sem chave): acessório (cordas/palhetas) → redirecionamento com menção a "instrumentos"; fora de escopo (capital do Canadá) → recusa cordial sem responder o conteúdo; reclamação → empatia + prazo "24 horas úteis"; pergunta vaga ("quero um presente") → agente faz pergunta de esclarecimento em vez de chutar; cliente negociando desconto → sem condições inexistentes, menciona formas de pagamento reais; tentativa de ação transacional ("cancela meu pedido", "faz o pedido pra mim") → recusa + encaminhamento ao atendimento humano (FR-012)
+- [x] T036 [US4] Write failing eval test `tests/eval/test_scope_and_persona.py` (marker `eval`, requer OPENAI_API_KEY, skip sem chave): acessório (cordas/palhetas) → redirecionamento com menção a "instrumentos"; fora de escopo (capital do Canadá) → recusa cordial sem responder o conteúdo; reclamação → empatia + prazo "24 horas úteis"; pergunta vaga ("quero um presente") → agente faz pergunta de esclarecimento em vez de chutar; cliente negociando desconto → sem condições inexistentes, menciona formas de pagamento reais; tentativa de ação transacional ("cancela meu pedido", "faz o pedido pra mim") → recusa + encaminhamento ao atendimento humano (FR-012)
 
 ### Implementation
 
-- [ ] T037 [US4] Estender `agent/prompt.py` com as regras de escopo/persona verbatim dos FRs: FR-008 (só instrumentos, redirecionar acessórios), FR-009 (recusa cordial de fora de escopo), fluxo de reclamação (empatia + registrar + 24h úteis), FR-012 (sem ações transacionais — informa e encaminha), PIX 5% não cumulativo com promoção (FR-006 final), negociação de desconto recusada, pergunta vaga → entender antes de consultar; iterar até T036 verde
-- [ ] T038 [US4] Commit US4
+- [x] T037 [US4] Estender `agent/prompt.py` com as regras de escopo/persona verbatim dos FRs: FR-008 (só instrumentos, redirecionar acessórios), FR-009 (recusa cordial de fora de escopo), fluxo de reclamação (empatia + registrar + 24h úteis), FR-012 (sem ações transacionais — informa e encaminha), PIX 5% não cumulativo com promoção (FR-006 final), negociação de desconto recusada, pergunta vaga → entender antes de consultar; iterar até T036 verde
+- [x] T038 [US4] Commit US4
 
 **Checkpoint**: Todas as stories funcionam independentemente
 

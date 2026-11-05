@@ -30,4 +30,5 @@ def test_orders_no_transactions_and_human_escalation():  # FR-012 + FR-005 (T034
 
 
 def test_service_scope():
-    assert "escopo" in SERVICE.lower()
+    for marker in ["escopo", "24 horas", "acessorios", "transacional", "esclarecimento"]:
+        assert marker in SERVICE.lower(), marker
