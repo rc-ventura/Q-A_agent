@@ -1,0 +1,18 @@
+.env
+.venv/
+.git/
+.claude/
+.devin/
+.specify/
+.playwright-mcp/
+specs/
+tests/
+docs/
+examples/
+data/runtime/
+Desafio Técnico AI Engineer 2026 2/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store
