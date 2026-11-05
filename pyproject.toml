@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Agente de atendimento virtual da Emporio da Musica (desafio Artefact AI Engineer)"
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    "deepagents==0.7.32",
+    "langchain==1.4.7",
     "langgraph==1.2.18",
     "langgraph-checkpoint-sqlite==3.1.2",
     "langchain-openai==1.7.3",

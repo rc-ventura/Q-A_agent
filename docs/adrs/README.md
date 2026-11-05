@@ -9,6 +9,7 @@ Decisões arquiteturais materiais do projeto, registradas na mesma entrega que a
 |-----|--------|--------|------|
 | [0001](./0001-runtime-single-container.md) | Runtime single container in-process em vez de LangGraph Server oficial | Aceito | 2026-11-04 |
 | [0002](./0002-arquitetura-hibrida-tools-rag.md) | Arquitetura hibrida: function calling sobre SQLite + RAG ChromaDB | Aceito | 2026-11-04 |
+| [0003](./0003-right-sizing-harness.md) | Right-sizing do harness: create_agent em vez de deepagents | Aceito | 2026-11-04 |
 
 ## Formato
 

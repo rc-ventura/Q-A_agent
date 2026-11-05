@@ -8,19 +8,19 @@ Diretrizes do autor (superior a qualquer default): **Python + Pydantic; deepagen
 
 ---
 
-## D1 — Harness do agente: `deepagents` (create_deep_agent)
+## D1 — Harness do agente: `create_agent` (right-sized)
 
-**Decision**: Usar `deepagents.create_deep_agent` (LangChain) como harness do agente, com o conjunto de tools embutidos **podado** ao necessário.
+**Decision (revisada 2026-11-04)**: Usar `langchain.agents.create_agent` — loop LLM↔tools com streaming, middleware e `checkpointer` nativos — em vez do harness completo `deepagents`.
 
 **Rationale**:
-- É o "batteries-included agent harness" oficial da LangChain sobre o runtime LangGraph (planejamento, subagentes via `task`, filesystem virtual, memória de longo prazo, middleware).
-- Aderente ao pedido do autor e demonstra decisão arquitetural moderna ao avaliador: o loop LLM↔tools vem pronto e testado, nós entregamos a camada de domínio (tools, prompt, RAG, guardrails).
-- Compatível com `checkpointer` (necessário para SQLite) e com `model="openai:..."`.
-
-**Trade-off crítico (edge case de segurança)**: por default o deep agent expõe tools de filesystem (`write_file`, `edit_file`) e `execute` (shell). Para um agente de atendimento ao cliente isso é superfície de risco desnecessária (prompt injection via mensagem do cliente). **Mitigação**: configurar backend em memória/sem sandbox (sem `execute`) e limitar `permissions`/tools expostos; o agente final expõe apenas os 5-6 tools de domínio (read-only).
+- O problema exige um loop de tool-calling + RAG: o roteamento "dados vs. políticas" é **seleção de tool**, não orquestração multi-passo. `create_agent` entrega exatamente isso (assinatura verificada em langchain 1.4.x instalado: `model, tools, system_prompt, middleware, checkpointer`).
+- Sem superfície de ataque a podar: filesystem virtual, subagentes (`task`) e `execute` (shell) **simplesmente não existem** no create_agent — elimina o trade-off de segurança que o deepagents exigiria gerenciar.
+- Menos dependências e menos overhead de prompt: `deepagents` traz como deps diretas não usadas `langchain-anthropic`, `langchain-google-genai`, `langsmith` e built-ins (todos, filesystem, subagentes) que inflariam o system prompt sem benefício (a allowlist mínimo de filesystem ainda exige `read_file`).
+- Precedente no portfólio do autor: AgendAI usa `create_agent` (ADR-026) com o mesmo sistema de middleware/checkpointer.
 
 **Alternatives considered**:
-- `langchain.create_agent` puro: mais leve, mas perde planejamento/subagentes e o alinhamento com o pedido do autor (e com o blueprint oficial `deep-agent-python`).
+- `deepagents.create_deep_agent` (harness completo, podado): blueprint oficial para tarefas multi-passo; rejeitado por evidência de oversizing — os built-ins (planejamento, filesystem virtual, subagentes, shell) não têm uso no atendimento de loja. Mantém-se como upgrade path se o agente crescer para pesquisa multi-passo/artefatos.
+- `mda` (Managed Deep Agents): rejeitado por evidência — beta público; `mda deploy` exige LangSmith Cloud/BYOC (infra extra para o avaliador); `mda dev` é runtime de desenvolvimento.
 - Loop ReAct manual em LangGraph: máximo controle, mais código próprio para manter; rejeitado (reinventar o harness).
 
 ---
@@ -111,9 +111,29 @@ Diretrizes do autor (superior a qualquer default): **Python + Pydantic; deepagen
 
 **Alternatives considered**: stack multi-container estilo AgendAI (nginx+api+server+pg+redis+ui) — decisivamente rejeitada pelo autor.
 
+**Nota (2026-11-04)**: o modo de execução via blueprint oficial (`langgraph build` + stack server/Postgres/Redis + agent-chat-ui) passa a ser opção documentada de escala — ver D9.
+
 ---
 
-## Edge cases da spec → mitigações de design
+## D9 — Single agent vs. multi-agent e o modo de execução do blueprint
+
+**Decision**: v1 com **um único agente** (`create_agent`) e tools agrupados por domínio. A arquitetura **multi-agente supervisor** fica documentada como caminho de evolução; o runtime do blueprint oficial (Agent Server) como modo de execução alternativo, também documentado.
+
+**Por que single agent agora**: o desafio exige roteamento dados-vs-políticas, que um único LLM resolve via seleção de tools (visível na UI como blocos distintos). Multi-agente adicionaria um hop de LLM por turno (latência), tokens de orquestração e superfície de debug — sem ganho no escopo atual (constituição III: simplicidade radical).
+
+**Design multi-agente documentado (se/quando escalar)**: padrão **supervisor** — um roteador coordena especialistas mapeados 1:1 às user stories:
+- Atendimento/escopo (sem tools: persona, recusas, reclamações) — US4
+- Catálogo (`search_products`, `get_product_details`) — US1
+- Pedidos (`find_customer`, `list_customer_orders`) — US3
+- Políticas (`search_policies`, `get_store_info`) — US2
+
+Implementação: `langgraph-supervisor` (orquestrador central) ou `langgraph-swarm` (handoffs entre pares); estado compartilhado = histórico de mensagens + checkpointer por thread. **Quando pagaria**: prompts por domínio grandes e conflitantes; modelos distintos por domínio (modelo barato p/ chit-chat, forte p/ pedidos); domínios evoluindo em ritmos diferentes; novas capacidades transacionais com fluxos próprios (pós-venda, negociação).
+
+**Modo de execução do blueprint (documentado)**: o mesmo `langgraph.json` serve a dois modos — (A) primário: processo único (UI + grafo + `AsyncSqliteSaver`), 1 container/1 chave, setup <15min; (B) escala: `langgraph build` + stack Agent Server/Postgres/Redis + `agent-chat-ui` (oficial) — stateless server, threads/runs/SSE, horizontal-ready. A factory `build_agent(checkpointer=...)` gera a variante adequada a cada modo.
+
+**UI — decisão diferida (2026-11-04)**: acoplada (Gradio no processo, onboarding da chave FR-016, melhor UX p/ avaliador) vs. desacoplada (agent-chat-ui oficial sobre o Agent Server, zero código próprio). Recomendação: modo duplo A+B, decisão final na fase 7 — não bloqueia nada antes dela.
+
+**Alternatives considered**: multi-agente v1 (rejeitado: custo sem benefício no escopo); MDA `mda` como blueprint (rejeitado: beta público + `deploy` exige cloud).
 
 | Edge case (spec) | Mitigação |
 |---|---|

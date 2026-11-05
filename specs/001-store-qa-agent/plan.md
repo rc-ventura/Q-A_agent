@@ -7,13 +7,13 @@
 
 ## Summary
 
-Agente de atendimento ao cliente da Empório da Música (desafio Artefact AI Engineer): **deep agent** (`deepagents` da LangChain sobre runtime **LangGraph**) com arquitetura **híbrida** — function calling sobre dados operacionais (6 CSVs → SQLite) + **RAG** (ChromaDB) sobre o manual de políticas (PDF), guiado pelos 7 pontos de falha de RAG de Barnett et al. (2024). **Um único container Docker** servindo UI **Gradio** (com onboarding da chave OpenAI que grava `.env`), histórico de conversa via **SQLite checkpointer** (`AsyncSqliteSaver`). Layout do projeto segue o **blueprint oficial LangGraph** (`langgraph.json`, `langgraph new --template deep-agent-python`), mantendo `langgraph dev/build` como caminho de DX e upgrade — sem os serviços Postgres/Redis do server oficial, por decisão de minimalismo (ver D2).
+Agente de atendimento ao cliente da Empório da Música (desafio Artefact AI Engineer): **agente de tool-calling right-sized** (`langchain.agents.create_agent` sobre runtime **LangGraph** — ADR-0003, revisado 2026-11-04) com arquitetura **híbrida** — function calling sobre dados operacionais (6 CSVs → SQLite) + **RAG** (ChromaDB) sobre o manual de políticas (PDF), guiado pelos 7 pontos de falha de RAG de Barnett et al. (2024). **Um único container Docker** servindo UI **Gradio** (com onboarding da chave OpenAI que grava `.env`), histórico de conversa via **SQLite checkpointer** (`AsyncSqliteSaver`). Layout do projeto segue o **blueprint oficial LangGraph** (`langgraph.json`, `langgraph new --template deep-agent-python`), mantendo `langgraph dev/build` como caminho de DX e upgrade — sem os serviços Postgres/Redis do server oficial, por decisão de minimalismo (ver D2).
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+ (exigido por `deepagents` e `langgraph-cli`)
 
-**Primary Dependencies**: `deepagents` (harness), `langgraph` (runtime) + `langgraph-checkpoint-sqlite`, `langchain-openai` (modelo + embeddings), `pydantic` + `pydantic-settings`, `gradio` (UI), `chromadb` (vetores), `pypdf` (ingestão do manual)
+**Primary Dependencies**: `langchain` (`create_agent`), `langgraph` (runtime) + `langgraph-checkpoint-sqlite`, `langchain-openai` (modelo + embeddings), `pydantic` + `pydantic-settings`, `gradio` (UI), `chromadb` (vetores), `pypdf` (ingestão do manual)
 
 **Storage**: SQLite `store.sqlite` (dados operacionais, read-only p/ agente), SQLite `checkpoints.sqlite` (threads/conversas via AsyncSqliteSaver), ChromaDB persistente local (políticas)
 
@@ -25,7 +25,7 @@ Agente de atendimento ao cliente da Empório da Música (desafio Artefact AI Eng
 
 **Performance Goals**: resposta < 30s p95 por mensagem (SC-007); ingestão cold-start < 60s; setup do avaliador < 15 min (SC-006)
 
-**Constraints**: tools read-only; sem filesystem/shell expostos ao LLM (podados do harness); chave OpenAI provisionada via UI (nunca commitada); 100% pt-BR; precisão factual obrigatória (SC-001/SC-002)
+**Constraints**: tools read-only; sem filesystem/shell expostos ao LLM (inexistentes no create_agent — ADR-0003); chave OpenAI provisionada via UI (nunca commitada); 100% pt-BR; precisão factual obrigatória (SC-001/SC-002)
 
 **Scale/Scope**: protótipo de avaliação: 1 conversa por vez × ~150 produtos, 20 pedidos, 50 clientes, 1 documento de políticas (~8 páginas)
 
@@ -72,7 +72,7 @@ langgraph.json          # blueprint oficial: {"graphs": {"emporio_agent": "./age
 
 agent/
 ├── __init__.py
-├── graph.py            # create_deep_agent(...) compilado com AsyncSqliteSaver (exporta `graph`)
+├── graph.py            # build_agent(...) via create_agent; exporta `graph` (checkpointer injetável por modo)
 ├── prompt.py           # system prompt: persona, regras dados-vs-políticas, recusas, FR-005/006/007/011
 └── tools/
     ├── catalog.py      # search_products, get_product_details

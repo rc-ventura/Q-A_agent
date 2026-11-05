@@ -2,7 +2,9 @@
 
 ## Status
 
-Aceito (2026-11-04)
+Aceito (2026-11-04). O item "harness deepagents com tools podados" e suprimido
+pelo ADR-0003 (`create_agent`); a arquitetura hibrida tools+RAG permanece
+integral.
 
 ## Contexto
 
