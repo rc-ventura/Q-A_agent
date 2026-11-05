@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 from agent.policies_rag import index_policies
 from agent.settings import Settings
@@ -9,7 +10,11 @@ from agent.tools.policies import make_policies_tools
 
 @pytest.fixture(scope="module")
 def coll(tmp_path_factory):
-    return index_policies(Settings(), persist_dir=str(tmp_path_factory.mktemp("chroma")))
+    return index_policies(
+        Settings(),
+        persist_dir=str(tmp_path_factory.mktemp("chroma")),
+        embedding_function=DefaultEmbeddingFunction(),
+    )
 
 
 @pytest.fixture(scope="module")

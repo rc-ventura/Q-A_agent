@@ -1,7 +1,10 @@
 import sqlite3
 from pathlib import Path
 
+import chromadb
 import pytest
+from chromadb.config import Settings as ChromaSettings
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 pytest.importorskip("chromadb")
 
@@ -10,6 +13,8 @@ from agent.policies_rag import (
     chunk_text,
     extract_pdf_sections,
     index_policies,
+    open_policies,
+    openai_embedding_function,
     search_policies,
     section_chunks,
 )
@@ -56,10 +61,11 @@ def test_section_chunks_deterministic_ids():
 def test_index_idempotent_and_search_metadata(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     s = Settings()
-    coll = index_policies(s, persist_dir=str(tmp_path))
+    local = DefaultEmbeddingFunction()
+    coll = index_policies(s, persist_dir=str(tmp_path), embedding_function=local)
     n1 = coll.count()
     assert n1 >= 10
-    coll = index_policies(s, persist_dir=str(tmp_path))
+    coll = index_policies(s, persist_dir=str(tmp_path), embedding_function=local)
     assert coll.count() == n1
     hits = search_policies(coll, "horário de funcionamento", s.rag_min_score, limit=3)
     assert isinstance(hits, list)
@@ -85,3 +91,60 @@ def test_active_promotions_view():
     assert rows, "manual espera promocoes ativas nos dados fonte"
     for price, disc, final in rows:
         assert final == round(price * (1 - disc / 100), 2)
+
+
+def test_openai_embedding_function_uses_small_model_and_env_key():
+    config = openai_embedding_function().get_config()
+    assert config["model_name"] == "text-embedding-3-small"
+    assert config["api_key_env_var"] == "OPENAI_API_KEY"
+
+
+class StubCollection:
+    def query(self, query_texts, n_results):
+        return {
+            "documents": [["perto", "longe"]],
+            "distances": [[0.3, 0.8]],
+            "metadatas": [[{"section_no": "1"}, {"section_no": "2"}]],
+        }
+
+
+def test_search_score_is_cosine_similarity_and_filters_below_minimum():
+    hits = search_policies(StubCollection(), "pergunta", min_score=0.5, limit=2)
+    assert [h["section_no"] for h in hits] == ["1"]
+    assert hits[0]["score"] == 0.7
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_index_uses_cosine_space(tmp_path):
+    coll = index_policies(Settings(), persist_dir=str(tmp_path), embedding_function=DefaultEmbeddingFunction())
+    assert coll.configuration["hnsw"]["space"] == "cosine"
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_reindex_replaces_legacy_collection_without_conflict(tmp_path):
+    client = chromadb.PersistentClient(
+        path=str(tmp_path), settings=ChromaSettings(anonymized_telemetry=False, allow_reset=True)
+    )
+    legacy = client.create_collection("policies")
+    legacy.add(ids=["velho"], documents=["conteudo antigo"])
+    coll = index_policies(Settings(), persist_dir=str(tmp_path), embedding_function=DefaultEmbeddingFunction())
+    assert coll.configuration["hnsw"]["space"] == "cosine"
+    assert coll.get(ids=["velho"])["ids"] == []
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_open_policies_reuses_existing_index_without_rebuilding(tmp_path):
+    local = DefaultEmbeddingFunction()
+    built = index_policies(Settings(), persist_dir=str(tmp_path), embedding_function=local)
+    built.add(ids=["sentinela"], documents=["marca para provar que nao houve reconstrucao"])
+    opened = open_policies(Settings(), persist_dir=str(tmp_path), embedding_function=local)
+    assert opened.get(ids=["sentinela"])["ids"] == ["sentinela"]
+    assert opened.count() == built.count()
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_open_policies_builds_index_when_missing(tmp_path):
+    opened = open_policies(
+        Settings(), persist_dir=str(tmp_path), embedding_function=DefaultEmbeddingFunction()
+    )
+    assert opened.count() >= 10

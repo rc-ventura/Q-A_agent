@@ -12,7 +12,7 @@ def test_defaults(monkeypatch):
     s = Settings(_env_file=None)
     assert s.openai_model == "gpt-4o-mini"
     assert s.openai_api_key is None
-    assert s.rag_min_score == 0.25
+    assert s.rag_min_score == 0.30
 
 
 def test_env_override(monkeypatch):

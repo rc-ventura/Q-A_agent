@@ -1,19 +1,3 @@
-<!--
-SYNC IMPACT REPORT (temporário — remover antes de commitar)
-- Mudança de versão: (não ratificada — template com placeholders) -> 1.0.0 (primeira ratificação)
-- Princípios modificados: IV. Arquitetura Limpa (exemplos de I/O generalizados, sem nomear tools)
-- Princípios adicionados: I. Evidência ou Nada; II. Test-First; III. Simplicidade Radical;
-  IV. Arquitetura Limpa e Clean Code; V. Conhecimento Vivo; VI. Código sem Ruído;
-  VII. Clareza antes de Código
-- Seções adicionadas: "Restrição Técnica e Escolhas Justificadas" (reframada: era "Stack e
-  Restrições Técnicas" que congelava stack — corrigido para alinhar ao enunciado do desafio,
-  cuja única restrição obrigatória é Python; demais escolhas são ADR/README, não constituição);
-  "Fluxo de Trabalho e Gates de Qualidade"; Governance preenchida
-- Seções removidas: nenhuma
-- Follow-ups: criar docs/adrs/ e docs/learning-lessons/ durante a implementação da feature 001;
-  o primeiro ADR candidate é a decisão D2 (single container in-process vs LangGraph Server);
-  provisão dos agentes de pesquisa fica a cargo do mantenedor do projeto
--->
 # Q&A Agent (Empório da Música) Constitution
 
 ## Core Principles

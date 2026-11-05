@@ -6,7 +6,7 @@ Interface entre o LLM e as fontes de dados. Todos os tools são **read-only**. S
 Catálogo: busca por texto/faixa de preço/categoria/disponibilidade.
 
 **Args**: `query: str | None`, `category: str | None`, `max_price_brl: float | None = None`, `in_stock_only: bool = True`, `limit: int = 5`
-**Retorna**: lista de até `limit` produtos `{name, price_brl, stock_quantity, category, description, active_promotion?: {discount_percent, final_price_brl}}`.
+**Retorna**: lista de até `limit` produtos `{name, price_brl, stock_quantity, category, description, active_promotion?: {discount_percent, final_price_brl, campaign}}`.
 **Garantias**: matching fuzzy em nome (LIKE + normalização de acentos); promoção incluída somente se `is_active=1`, sempre com `price_brl` original + `%` + final.
 **Erros**: nenhum match → lista vazia (o agente formula "não encontrei" + alternativas; nunca inventa).
 
@@ -14,7 +14,7 @@ Catálogo: busca por texto/faixa de preço/categoria/disponibilidade.
 Detalhes de um produto específico (specs completas).
 
 **Args**: `product_name: str` (fuzzy) **ou** `product_id: int`
-**Retorna**: `{name, price_brl, stock_quantity, status, category, description, specs(dict), active_promotion?}`.
+**Retorna**: `{name, price_brl, stock_quantity, status, category, description, specs(dict), active_promotion?}` (`status`: `active`, `discontinued` ou `coming_soon`; inclui produtos fora do catálogo ativo).
 **Erros**: produto não encontrado → `{"error": "not_found", "did_you_mean": [...]} ` (o agente confirma com o cliente antes de responder).
 
 ## 3. `search_policies`

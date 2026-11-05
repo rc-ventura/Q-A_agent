@@ -57,3 +57,17 @@ def test_local_agent_wires_async_sqlite_saver(monkeypatch):
 
     asyncio.run(run())
     assert Settings().checkpoint_db_path.exists()
+
+
+def test_route_descriptions_send_store_questions_to_policies_not_service(monkeypatch):
+    tools = {t.name: t.description.lower() for t in specialist_tools(_settings(monkeypatch))}
+    for term in ["horario", "endereco", "frete", "parcelamento", "trocas", "boquilha"]:
+        assert term in tools["specialist_policies"], term
+    assert "nao use" in tools["specialist_service"]
+    assert "politicas" in tools["specialist_service"]
+
+
+def test_dispatcher_prefers_policies_when_in_doubt():
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "na duvida" in prompt and "prefira politicas" in prompt
+    assert "use o especialista atendimento" not in prompt

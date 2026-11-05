@@ -1,19 +1,22 @@
 import json
+import threading
 
 from langchain_core.tools import tool
 
-from agent.policies_rag import index_policies, search_policies as _rag_search
+from agent.policies_rag import open_policies, search_policies as _rag_search
 from agent.settings import Settings
 from agent.tools.store_info import get_store_info as _store_info
 
 _collection_cache: dict[str, object] = {}
+_collection_lock = threading.Lock()
 
 
 def _collection(settings: Settings):
     key = str(settings.chroma_dir)
-    if key not in _collection_cache:
-        _collection_cache[key] = index_policies(settings)
-    return _collection_cache[key]
+    with _collection_lock:
+        if key not in _collection_cache:
+            _collection_cache[key] = open_policies(settings)
+        return _collection_cache[key]
 
 
 def make_policies_tools(settings: Settings, collection=None, min_score: float | None = None) -> list:
@@ -21,7 +24,7 @@ def make_policies_tools(settings: Settings, collection=None, min_score: float | 
 
     ``collection=None`` resolve a collection de settings.chroma_dir de forma
     lazy na primeira chamada (o index e criado no startup do app — T040 —
-    para nao penalizar o primeiro cliente); ``min_score`` sobrescreve
+    para nao penalizar o primeiro cliente; aqui ele so e aberto); ``min_score`` sobrescreve
     settings.rag_min_score quando passado.
     """
     score = settings.rag_min_score if min_score is None else min_score

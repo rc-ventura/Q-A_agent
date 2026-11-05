@@ -32,3 +32,22 @@ def test_orders_no_transactions_and_human_escalation():  # FR-012 + FR-005 (T034
 def test_service_scope():
     for marker in ["escopo", "24 horas", "acessorios", "transacional", "esclarecimento"]:
         assert marker in SERVICE.lower(), marker
+
+
+def test_dispatcher_always_delegates_and_covers_mixed_questions():
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "sempre delegue" in prompt
+    assert "mista" in prompt and "todos os especialistas" in prompt
+    assert "responda voce mesmo" not in prompt
+    assert "frete" in prompt and "parcelamento" in prompt
+
+
+def test_catalog_handles_discontinued_and_upcoming_products():  # manual 7.3
+    for marker in ["descontinuado", "nao faz mais parte do catalogo", "em breve"]:
+        assert marker in CATALOG.lower(), marker
+
+
+def test_catalog_always_reports_stock_and_handles_named_campaigns():
+    prompt = CATALOG.lower()
+    for marker in ["sempre", "unidades em estoque", "campanha", "nao esta vigente"]:
+        assert marker in prompt, marker

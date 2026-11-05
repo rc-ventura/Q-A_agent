@@ -9,10 +9,22 @@ from agent.prompt import DISPATCHER_SYSTEM_PROMPT
 from agent.settings import Settings, get_settings
 
 _SPECIALIST_SPECS = [
-    ("catalog", "Perguntas sobre produtos, precos, estoque, promocoes e indicacoes de instrumentos.", specialists.catalog),
-    ("policies", "Perguntas sobre trocas, devolucoes, garantia, pagamentos, entrega, horarios, endereco e LGPD.", specialists.policies),
+    ("catalog", "Perguntas sobre produtos, precos, estoque, promocoes, produtos descontinuados e indicacoes de instrumentos.", specialists.catalog),
+    (
+        "policies",
+        "Informacoes institucionais e regras da loja: horario de funcionamento, endereco, telefone e "
+        "contato, formas de pagamento, parcelamento, frete, prazos e valores de entrega, trocas e "
+        "devolucoes de qualquer item (inclusive boquilha ou peca de instrumento), garantia e LGPD.",
+        specialists.policies,
+    ),
     ("orders", "Consultas de status, rastreio e historico de pedidos do cliente.", specialists.orders),
-    ("service", "Saudacoes, elogios, reclamacoes e assuntos fora do escopo da loja.", specialists.service),
+    (
+        "service",
+        "Somente saudacoes, elogios, reclamacoes, pedidos de acessorios (cordas, palhetas, cabos), "
+        "negociacao de desconto, perguntas vagas, pedidos de acao (cancelar, alterar) e assuntos fora "
+        "do escopo da loja. Nao use para duvidas sobre a loja ou suas politicas: essas vao para politicas.",
+        specialists.service,
+    ),
 ]
 
 

@@ -3,10 +3,14 @@ from pathlib import Path
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
+from chromadb.errors import NotFoundError
+from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from pypdf import PdfReader
 
 SECTION_RE = re.compile(r"^(\d{1,2}(?:\.\d{1,2})?)(?:\. | )(\S.*)$")
 NOISE_RE = re.compile(r"^\s*(Página \d+|Empório da Música Manual de Políticas.*)$")
+COLLECTION_NAME = "policies"
+EMBEDDING_MODEL = "text-embedding-3-small"
 MAX_CHUNK_CHARS = 1200
 OVERLAP = 150
 
@@ -85,12 +89,50 @@ def section_chunks(section: dict) -> list[dict]:
     ]
 
 
-def build_collection(sections: list[dict], persist_dir: str) -> "chromadb.api.Collection":
-    """Indexa os chunks por secao no Chroma persistente (upsert idempotente)."""
-    client = chromadb.PersistentClient(
+def _client(persist_dir: str):
+    """Cliente Chroma persistente; todos os acessos usam as mesmas opcoes (exigencia do Chroma por diretorio)."""
+    return chromadb.PersistentClient(
         path=persist_dir, settings=ChromaSettings(anonymized_telemetry=False, allow_reset=True)
     )
-    coll = client.get_or_create_collection("policies")
+
+
+def openai_embedding_function() -> OpenAIEmbeddingFunction:
+    """Embeddings OpenAI para o indice de politicas.
+
+    A chave e lida da variavel OPENAI_API_KEY no momento do uso (o Chroma
+    persiste apenas o NOME da variavel, nunca o segredo). Medido no manual da
+    loja: a secao correta fica no top-3 em 12/12 perguntas, contra 8/12 do
+    MiniLM padrao do Chroma, que e um modelo em ingles (ver LL-0002).
+    """
+    return OpenAIEmbeddingFunction(model_name=EMBEDDING_MODEL, api_key_env_var="OPENAI_API_KEY")
+
+
+def build_collection(sections: list[dict], persist_dir: str, embedding_function) -> "chromadb.api.Collection":
+    """Reconstroi o indice de politicas no Chroma persistente (espaco cosseno).
+
+    O indice e derivado do PDF, entao e recriado do zero a cada chamada: isso
+    mantem a operacao idempotente (IDs deterministicos, sem duplicar) e evita
+    conflito quando muda a funcao de embedding ou o espaco de distancia de um
+    indice gravado por versao anterior.
+
+    Args:
+        sections: secoes extraidas do manual.
+        persist_dir: diretorio do Chroma persistente.
+        embedding_function: funcao de embedding usada na indexacao e nas consultas.
+
+    Returns:
+        A collection ``policies`` populada.
+    """
+    client = _client(persist_dir)
+    try:
+        client.delete_collection(COLLECTION_NAME)
+    except NotFoundError:
+        pass
+    coll = client.create_collection(
+        COLLECTION_NAME,
+        embedding_function=embedding_function,
+        configuration={"hnsw": {"space": "cosine"}},
+    )
     chunks = [c for s in sections for c in section_chunks(s)]
     if chunks:
         coll.upsert(
@@ -106,25 +148,58 @@ def build_collection(sections: list[dict], persist_dir: str) -> "chromadb.api.Co
     return coll
 
 
-def index_policies(settings, persist_dir: str | None = None):
-    """Pipeline completo: PDF -> secoes -> chunks -> Chroma (idempotente)."""
+def index_policies(settings, persist_dir: str | None = None, embedding_function=None):
+    """Pipeline completo: PDF -> secoes -> chunks -> Chroma.
+
+    Args:
+        settings: configuracao com ``source_dir`` e ``chroma_dir``.
+        persist_dir: sobrescreve ``settings.chroma_dir`` (testes).
+        embedding_function: padrao ``openai_embedding_function()``; testes
+            injetam a funcao local para rodar sem rede.
+    """
     sections = extract_pdf_sections(settings.source_dir / "politicas_da_loja.pdf")
-    return build_collection(sections, persist_dir or str(settings.chroma_dir))
+    return build_collection(
+        sections,
+        persist_dir or str(settings.chroma_dir),
+        embedding_function or openai_embedding_function(),
+    )
+
+
+def open_policies(settings, persist_dir: str | None = None, embedding_function=None):
+    """Abre o indice de politicas ja existente; so indexa se ele ainda nao existir.
+
+    E o caminho de consulta (tools): nao reconstroi o indice, o que seria
+    destrutivo para consultas concorrentes. A reconstrucao fica a cargo de
+    ``index_policies``, chamada uma vez na inicializacao.
+
+    Args:
+        settings: configuracao com ``source_dir`` e ``chroma_dir``.
+        persist_dir: sobrescreve ``settings.chroma_dir`` (testes).
+        embedding_function: padrao ``openai_embedding_function()``.
+
+    Returns:
+        A collection ``policies`` pronta para consulta.
+    """
+    directory = persist_dir or str(settings.chroma_dir)
+    embedding_function = embedding_function or openai_embedding_function()
+    try:
+        return _client(directory).get_collection(COLLECTION_NAME, embedding_function=embedding_function)
+    except NotFoundError:
+        return index_policies(settings, persist_dir=directory, embedding_function=embedding_function)
 
 
 def search_policies(coll, query: str, min_score: float, limit: int = 3) -> list[dict]:
     """Top-k chunks por similaridade cosseno; descarta scores < min_score.
 
-    Chroma devolve distancia L2^2; com embeddings normalizados (MiniLM
-    default), cosseno = 1 - d^2/2 — threshold na escala cosseno (FP1: sem
-    trecho forte o especialista deve recusar em vez de improvisar regra).
+    O indice usa espaco cosseno, entao ``score = 1 - distancia``. Sem trecho
+    forte o especialista deve recusar em vez de improvisar regra (FP1).
     """
     res = coll.query(query_texts=[query], n_results=limit)
     hits = []
     for doc, dist, meta in zip(
         res["documents"][0], res["distances"][0], res["metadatas"][0]
     ):
-        score = 1.0 - (dist**2) / 2
+        score = 1.0 - dist
         if score >= min_score:
             hits.append({"text": doc, "score": round(score, 3), **meta})
     return hits

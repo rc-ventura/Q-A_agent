@@ -35,7 +35,7 @@ Roteiro de perguntas no chat — resultados esperados conforme [spec.md](./spec.
 | 2 | "Quanto custa o Takamine GD20?" | R$ 2.199,00 e 5 unidades em estoque |
 | 3 | "Qual o endereço da loja?" | Rua 14 de Maio, 3200 — Centro, Campo Grande-MS |
 | 4 | "Me arrependi da minha compra, posso devolver meu pedido?" | Direito de arrependimento: 7 dias corridos, embalagem original, reembolso mesma forma de pagamento em até 10 dias úteis, frete por conta da loja — tool de políticas visível |
-| 5 | "Sou Pedro Henrique Oliveira, cadê meu pedido?" | 2 pedidos: #3 delivered (rastreio BRDZ4561230BR) e #19 cancelled (pagamento não confirmado) |
+| 5 | "Sou Pedro Henrique Oliveira, cadê meu pedido?" | 2 pedidos: #1 delivered (rastreio BRAB1234567BR) e #19 cancelled (pagamento não confirmado) |
 | 6 | "Vocês vendem cordas avulsas?" | Redirecionamento educado (loja vende só instrumentos) |
 | 7 | "Tem a promoção de Black Friday ainda?" | Informa que não está vigente e mostra preço atual (promoções BF estão `is_active=0`) |
 | 8 | Pergunta mista: "Quanto custa o Taylor 214ce e dá pra parcelar em 12x?" | Preço + disponibilidade (tool de dados) **e** regra de parcelamento (tool de políticas) na mesma resposta |
