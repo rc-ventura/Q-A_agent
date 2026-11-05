@@ -19,9 +19,9 @@ def test_catalog_promotion_format():  # FR-006 + US1 T026
         assert marker in CATALOG.lower(), marker
 
 
-def test_policies_only_from_manual():  # FR-003
-    assert "chunks" in POLICIES.lower()
-    assert "improvise" in POLICIES.lower()
+def test_policies_only_from_manual():  # FR-003 + FR-011 (T030)
+    for marker in ["chunks", "improvise", "literalmente", "weak", "(67) 3341-4444"]:
+        assert marker in POLICIES.lower(), marker
 
 
 def test_orders_no_transactions_and_human_escalation():  # FR-012

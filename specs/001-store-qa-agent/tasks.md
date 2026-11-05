@@ -93,13 +93,13 @@ description: "Task list for feature implementation — agente de atendimento Emp
 
 ### Tests first (TDD)
 
-- [ ] T028 [P] [US2] Write failing unit test `tests/unit/test_tools_policies.py` cobrindo `contracts/tools.contract.md` §3 e §6 verbatim: `search_policies(question, top_k=3)` — pergunta "devolução por arrependimento" retorna chunk da seção 4 contendo "7 (sete) dias" e "10 dias úteis", com `section_title` presente; chunks abaixo de `similarity >= 0.25` (limiar configurável via settings) excluídos; nenhum chunk acima do limiar → `{"retrieval": "weak"}`; texto retornado é bruto (sem sumarização — FP3/FP4); `get_store_info()` sem args retorna bloco fixo com endereço (Rua 14 de Maio, 3200 — Centro, Campo Grande-MS), WhatsApp (67) 3341-4444 e horários (Seg–Sex 09:00–18:00, Sáb 09:00–13:00)
+- [x] T028 [P] [US2] Write failing unit test `tests/unit/test_tools_policies.py` cobrindo `contracts/tools.contract.md` §3 e §6 verbatim: `search_policies(question, top_k=3)` — pergunta "devolução por arrependimento" retorna chunk da seção 4 contendo "7 (sete) dias" e "10 dias úteis", com `section_title` presente; chunks abaixo de `similarity >= 0.25` (limiar configurável via settings) excluídos; nenhum chunk acima do limiar → `{"retrieval": "weak"}`; texto retornado é bruto (sem sumarização — FP3/FP4); `get_store_info()` sem args retorna bloco fixo com endereço (Rua 14 de Maio, 3200 — Centro, Campo Grande-MS), WhatsApp (67) 3341-4444 e horários (Seg–Sex 09:00–18:00, Sáb 09:00–13:00)
 
 ### Implementation
 
-- [ ] T029 [US2] Implement `agent/tools/policies.py`: `search_policies` (query na collection Chroma, top_k=3, filtro por `settings.rag_min_score`, retorna `{section_title, text, similarity}`) + `get_store_info` (bloco fixo) — passar T028
-- [ ] T030 [US2] Registrar tools de políticas em `agent/graph.py` e estender `agent/prompt.py`: citar a regra literalmente; retrieval `weak` → seguir FR-011 (declarar limite + canais de contato humano); respostas de política nunca "de cabeça"
-- [ ] T031 [US2] Commit US2
+- [x] T029 [US2] Implement `agent/tools/policies.py`: `search_policies` (query na collection Chroma, top_k=3, filtro por `settings.rag_min_score`, retorna `{section_title, text, similarity}`) + `get_store_info` (bloco fixo) — passar T028
+- [x] T030 [US2] Registrar tools de políticas em `agent/graph.py` e estender `agent/prompt.py`: citar a regra literalmente; retrieval `weak` → seguir FR-011 (declarar limite + canais de contato humano); respostas de política nunca "de cabeça"
+- [x] T031 [US2] Commit US2
 
 **Checkpoint**: US1 + US2 funcionam independentemente — SC-002 aferível no nível do tool
 

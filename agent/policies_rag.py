@@ -95,7 +95,10 @@ def build_collection(sections: list[dict], persist_dir: str) -> "chromadb.api.Co
     if chunks:
         coll.upsert(
             ids=[c["id"] for c in chunks],
-            documents=[c["text"] for c in chunks],
+            documents=[
+                f"Secao {c['section_no']} — {c['section_title']}\n\n{c['text']}"
+                for c in chunks
+            ],
             metadatas=[
                 {k: c[k] for k in ("section_no", "section_title", "page")} for c in chunks
             ],
@@ -110,17 +113,18 @@ def index_policies(settings, persist_dir: str | None = None):
 
 
 def search_policies(coll, query: str, min_score: float, limit: int = 3) -> list[dict]:
-    """Top-k chunks por similaridade; descarta scores abaixo de min_score.
+    """Top-k chunks por similaridade cosseno; descarta scores < min_score.
 
-    Cada hit traz o texto e os metadados da secao (FP1: sem trecho forte o
-    especialista deve recusar em vez de improvisar regra).
+    Chroma devolve distancia L2^2; com embeddings normalizados (MiniLM
+    default), cosseno = 1 - d^2/2 — threshold na escala cosseno (FP1: sem
+    trecho forte o especialista deve recusar em vez de improvisar regra).
     """
     res = coll.query(query_texts=[query], n_results=limit)
     hits = []
     for doc, dist, meta in zip(
         res["documents"][0], res["distances"][0], res["metadatas"][0]
     ):
-        score = 1.0 - dist
+        score = 1.0 - (dist**2) / 2
         if score >= min_score:
             hits.append({"text": doc, "score": round(score, 3), **meta})
     return hits
