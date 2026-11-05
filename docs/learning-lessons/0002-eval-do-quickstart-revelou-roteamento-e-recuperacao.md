@@ -22,6 +22,16 @@ O diagnóstico exigiu rastrear o que cada camada fazia, e não só ler a respost
    `Settings`, incluindo a chave real, porque o teste não isolava o `.env`. `openai_api_key` agora é
    `SecretStr` e os testes usam `Settings(_env_file=None)`.
 
+5. **Regra nova que invade o vizinho.** Para garantir o prazo de 24 h nas reclamações (medido em 7/10),
+   uma primeira regra ampla no roteador fez "Me arrependi, posso devolver?" e "veio com defeito, em quanto
+   tempo posso trocar?" virarem reclamações: a bateria pegou a regressão na rodada seguinte. A versão
+   final distingue relato de problema (sem pergunta de regra) de pergunta de regra, e foi medida 10 vezes
+   por caso (10/10 nos quatro casos de fronteira).
+6. **Exemplos de conversa também são teste.** Ao capturar as conversas de exemplo do agente real e conferir
+   cada fato contra os dados, apareceram três defeitos que a bateria não cobria: pedido de telefone para
+   identificar o cliente, "7 unidades" inventadas (o tool não devolvia a quantidade) e oferta de acessórios.
+   Cada um virou teste.
+
 ## Inconsistências nas fontes (não corrigidas, registradas)
 
 - O quickstart dizia que Pedro Henrique Oliveira tem os pedidos #3 e #19; nos CSVs são #1 e #19 (o #3
@@ -40,3 +50,7 @@ O diagnóstico exigiu rastrear o que cada camada fazia, e não só ler a respost
   embedding ruim só desloca o problema.
 - Nunca deixar objetos de configuração com segredo sem mascaramento: o pytest imprime `repr` em falhas.
 - Conferir os dados antes de escrever fatos esperados a partir da spec.
+- Mudança de prompt em um comportamento exige medir os casos vizinhos, não só o alvo: repetir cada caso
+  de fronteira ~10 vezes antes de aceitar. Uma única rodada verde esconde a variância do modelo.
+- Quando o modelo inventa um dado, perguntar primeiro se o tool o entregou. Expor o campo no tool vale mais
+  do que mais uma frase de "não invente" no prompt.
