@@ -72,8 +72,13 @@ langgraph.json          # blueprint oficial: {"graphs": {"emporio_agent": "./age
 
 agent/
 ├── __init__.py
-├── graph.py            # build_agent(...) via create_agent; exporta `graph` (checkpointer injetável por modo)
-├── prompt.py           # system prompt: persona, regras dados-vs-políticas, recusas, FR-005/006/007/011
+├── graph.py            # dispatcher create_agent (persona/escopo + 4 tools-roteadoras) → especialistas; exporta `graph` (checkpointer injetável) — ADR-0004
+├── prompt.py           # system prompt do dispatcher: persona, roteamento dados-vs-políticas, recusas, FR-005/006/007/011
+├── specialists/        # 1 create_agent por domínio (1:1 user stories, ADR-0004)
+│   ├── catalog_agent.py    # US1: search_products, get_product_details
+│   ├── policies_agent.py   # US2: search_policies, get_store_info
+│   ├── orders_agent.py     # US3: find_customer, list_customer_orders
+│   └── service_agent.py    # US4: persona/escopo/reclamações (sem tools de dados)
 └── tools/
     ├── catalog.py      # search_products, get_product_details
     ├── db.py           # conexão read-only ao store.sqlite (URI mode=ro), compartilhada pelos tools

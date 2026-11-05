@@ -115,9 +115,9 @@ Diretrizes do autor (superior a qualquer default): **Python + Pydantic; deepagen
 
 ---
 
-## D9 — Single agent vs. multi-agent e o modo de execução do blueprint
+## D9 — Arquitetura dispatcher (SUPERSEDED: single → dispatcher em 2026-11-04)
 
-**Decision**: v1 com **um único agente** (`create_agent`) e tools agrupados por domínio. A arquitetura **multi-agente supervisor** fica documentada como caminho de evolução; o runtime do blueprint oficial (Agent Server) como modo de execução alternativo, também documentado.
+**Decision (revisada 2026-11-04 — decisão do autor "monte com a arquitetura dispatcher")**: v1 com **arquitetura dispatcher**: um roteador (`create_agent` com persona/escopo + 4 tools-roteadoras) delegando a **especialistas por domínio** (catalog/policies/orders/service), cada um um `create_agent` com prompt e tools próprios — mapeado 1:1 às user stories. Ver ADR-0004. Single-agent permanece como alternativa documentada caso latência/complexidade incomodem.
 
 **Por que single agent agora**: o desafio exige roteamento dados-vs-políticas, que um único LLM resolve via seleção de tools (visível na UI como blocos distintos). Multi-agente adicionaria um hop de LLM por turno (latência), tokens de orquestração e superfície de debug — sem ganho no escopo atual (constituição III: simplicidade radical).
 
