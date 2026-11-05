@@ -63,3 +63,16 @@ def test_orders_identifies_by_name_or_email_never_phone_and_never_guesses_quanti
 def test_dispatcher_never_offers_accessories():  # FR-008
     prompt = DISPATCHER_SYSTEM_PROMPT.lower()
     assert "nunca ofereca" in prompt and "acessorios" in prompt.split("nunca ofereca")[1][:80]
+
+
+def test_dispatcher_complaints_state_24h_return_and_preserve_specialist_details():  # manual 7.3
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "reclamac" in prompt and "24 horas uteis" in prompt
+    assert "preserve" in prompt and "prazos" in prompt
+
+
+def test_dispatcher_separates_complaints_from_policy_questions():
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "sem perguntar" in prompt
+    assert "arrependimento" in prompt and "defeito" in prompt
+    assert "delegue tambem a politicas" in prompt

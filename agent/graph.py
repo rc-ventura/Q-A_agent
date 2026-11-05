@@ -20,7 +20,7 @@ _SPECIALIST_SPECS = [
     ("orders", "Consultas de status, rastreio e historico de pedidos do cliente.", specialists.orders),
     (
         "service",
-        "Somente saudacoes, elogios, reclamacoes, pedidos de acessorios (cordas, palhetas, cabos), "
+        "Somente saudacoes, elogios, reclamacoes (relato de problema sem perguntar regra), pedidos de acessorios (cordas, palhetas, cabos), "
         "negociacao de desconto, perguntas vagas, pedidos de acao (cancelar, alterar) e assuntos fora "
         "do escopo da loja. Nao use para duvidas sobre a loja ou suas politicas: essas vao para politicas.",
         specialists.service,

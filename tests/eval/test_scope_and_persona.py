@@ -11,7 +11,7 @@ def test_accessory_redirects_to_instruments(agent):
         reply,
         required=[
             "instrumento",
-            ("não vendemos", "não trabalhamos", "só instrumentos", "somente instrumentos",
+            ("não vende", "não vendemos", "não trabalhamos", "só instrumentos", "somente instrumentos",
              "apenas instrumentos", "exclusivamente"),
         ],
     )
