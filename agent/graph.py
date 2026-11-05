@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from langchain.agents import create_agent
 from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -56,14 +58,19 @@ def build_agent(checkpointer=None, settings: Settings | None = None):
     )
 
 
-def build_local_agent(settings: Settings | None = None):
-    """Dispatcher para execucao local com checkpoints SQLite (modo A)."""
+@asynccontextmanager
+async def local_agent(settings: Settings | None = None):
+    """Dispatcher para execucao local com checkpoints SQLite (modo A).
+
+    ``AsyncSqliteSaver.from_conn_string`` devolve um context manager cujo
+    saver real so existe dentro do bloco — por isso a factory e um async
+    context manager que entra no saver, compila o grafo com ele ativo e
+    devolve o grafo pronto para uso com ``thread_id``.
+    """
     s = settings or get_settings()
     s.runtime_dir.mkdir(parents=True, exist_ok=True)
-    return build_agent(
-        checkpointer=AsyncSqliteSaver.from_conn_string(str(s.checkpoint_db_path)),
-        settings=s,
-    )
+    async with AsyncSqliteSaver.from_conn_string(str(s.checkpoint_db_path)) as saver:
+        yield build_agent(checkpointer=saver, settings=s)
 
 
 graph = build_agent()

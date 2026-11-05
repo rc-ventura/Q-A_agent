@@ -37,3 +37,23 @@ def test_prompt_has_persona_and_hard_rules():
 def test_build_agent_compiles_without_checkpointer(monkeypatch):
     graph = build_agent(settings=_settings(monkeypatch))
     assert graph is not None
+
+
+def test_local_agent_wires_async_sqlite_saver(monkeypatch):
+    import asyncio
+
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+    from agent.graph import local_agent
+    from agent.settings import Settings
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-unit-test-sem-rede")
+
+    async def run():
+        async with local_agent() as graph:
+            assert isinstance(graph.checkpointer, AsyncSqliteSaver)
+            cfg = {"configurable": {"thread_id": "unit-wiring-thread"}}
+            assert await graph.checkpointer.aget_tuple(cfg) is None
+
+    asyncio.run(run())
+    assert Settings().checkpoint_db_path.exists()

@@ -1,0 +1,32 @@
+from agent.prompt import DISPATCHER_SYSTEM_PROMPT
+from agent.specialists.catalog_agent import SYSTEM_PROMPT as CATALOG
+from agent.specialists.orders_agent import SYSTEM_PROMPT as ORDERS
+from agent.specialists.policies_agent import SYSTEM_PROMPT as POLICIES
+from agent.specialists.service_agent import SYSTEM_PROMPT as SERVICE
+
+
+def test_dispatcher_markers():
+    assert "Emporio da Musica" in DISPATCHER_SYSTEM_PROMPT
+    assert "Nunca invente" in DISPATCHER_SYSTEM_PROMPT  # FR-002
+    assert "fora do escopo" in DISPATCHER_SYSTEM_PROMPT  # FR-009
+    assert "transacionais" in DISPATCHER_SYSTEM_PROMPT  # FR-012
+    assert "(67) 3341-4444" in DISPATCHER_SYSTEM_PROMPT
+
+
+def test_catalog_promotion_format():  # FR-006
+    for marker in ["preco original", "percentual", "preco final"]:
+        assert marker in CATALOG.lower(), marker
+
+
+def test_policies_only_from_manual():  # FR-003
+    assert "chunks" in POLICIES.lower()
+    assert "improvise" in POLICIES.lower()
+
+
+def test_orders_no_transactions_and_human_escalation():  # FR-012
+    assert "transacionais" in ORDERS.lower()
+    assert "(67) 3341-4444" in ORDERS
+
+
+def test_service_scope():
+    assert "escopo" in SERVICE.lower()
