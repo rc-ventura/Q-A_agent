@@ -23,6 +23,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not eval'"
 markers = [
     "eval: testes que requerem OPENAI_API_KEY e chamam o LLM real",
 ]
