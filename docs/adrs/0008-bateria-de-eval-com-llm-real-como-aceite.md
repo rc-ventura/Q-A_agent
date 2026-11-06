@@ -31,5 +31,9 @@ de fronteira de roteamento são repetidos 10 vezes antes de aceitar.
   duplicados, status em inglês); cada critério de sucesso tem um teste executável.
 - Negativas: não é determinística. Uma rodada pode falhar por variância do modelo, e um caso de
   fronteira medido em 10/10 deu 9/10 numa medição seguinte. A asserção por substring não avalia tom
-  nem pega uma resposta certa mas mal formulada.
+  nem pega uma resposta certa mas mal formulada. Com a temperatura padrão cada caso falhava em poucos
+  por cento das vezes, o que dava 1 a 2 falhas por rodada de 43 casos, em casos diferentes. Fixar a
+  temperatura em 0 (`OPENAI_TEMPERATURE`) tornou duas rodadas seguidas 43/43. Isso reduz a variância, mas
+  não a elimina, e as asserções por substring também geraram falsos negativos (uma recusa correta com
+  "não comercializa" fora da lista de grafias aceitas), corrigidos ampliando a lista.
 - Neutras: não roda em CI sem segredo; o README documenta como rodar e os números da última execução.

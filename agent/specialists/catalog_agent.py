@@ -1,5 +1,6 @@
 from langchain.agents import create_agent
 
+from agent.llm import build_model
 from agent.settings import Settings
 from agent.tools.catalog import make_catalog_tools
 
@@ -21,7 +22,7 @@ Antes de dizer que um produto nao existe, consulte get_product_details: ele tamb
 def build(settings: Settings, db_path: str | None = None):
     """Especialista de catalogo (US1) com tools de busca/detalhe (T026)."""
     return create_agent(
-        model=f"openai:{settings.openai_model}",
+        model=build_model(settings),
         tools=make_catalog_tools(db_path or str(settings.store_db_path)),
         system_prompt=SYSTEM_PROMPT,
     )

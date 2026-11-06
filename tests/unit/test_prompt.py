@@ -97,3 +97,26 @@ def test_dispatcher_always_calls_policies_when_payment_terms_are_mentioned():
     assert "mesmo que" in prompt
     for term in ["parcelar", "pix", "frete"]:
         assert term in prompt, term
+
+
+def test_policies_offers_human_contact_when_a_specific_quote_is_not_in_the_manual():
+    # Eval: o manual explica COMO o frete e calculado, mas nao traz o valor para uma cidade.
+    # Sem esta regra o agente as vezes parava na explicacao e omitia o contato da equipe.
+    prompt = POLICIES.lower()
+    assert "cotacao" in prompt
+    assert "mesmo que o manual explique" in prompt
+    assert "3341-4444" in prompt
+
+
+def test_dispatcher_never_narrates_a_handoff_instead_of_calling_the_specialist():
+    # Eval: em rodadas isoladas o roteador respondeu "vou encaminhar, um momento" sem chamar a tool.
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "um momento" in prompt
+    assert "na mesma resposta" in prompt
+
+
+def test_orders_asks_for_email_when_no_customer_is_found():
+    # Eval: com cliente desconhecido o agente as vezes pedia "cidade ou outro nome" em vez do e-mail.
+    prompt = ORDERS.lower()
+    assert "nenhum candidato" in prompt
+    assert "e-mail" in prompt.split("nenhum candidato", 1)[1]

@@ -1,5 +1,6 @@
 from langchain.agents import create_agent
 
+from agent.llm import build_model
 from agent.settings import Settings
 
 SYSTEM_PROMPT = """Especialista de atendimento da Emporio da Musica (saudacoes, reclamacoes, pedidos fora de escopo).
@@ -17,7 +18,7 @@ Pedidos de acao transacional (cancelar, alterar, emitir pedido): recuse e encami
 def build(settings: Settings):
     """Especialista de atendimento (US4): sem tools de dados por design (ADR-0004)."""
     return create_agent(
-        model=f"openai:{settings.openai_model}",
+        model=build_model(settings),
         tools=[],
         system_prompt=SYSTEM_PROMPT,
     )

@@ -7,6 +7,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from agent import specialists
 from agent.prompt import DISPATCHER_SYSTEM_PROMPT
+from agent.llm import build_model
 from agent.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def build_agent(checkpointer=None, settings: Settings | None = None):
     """
     s = settings or get_settings()
     return create_agent(
-        model=f"openai:{s.openai_model}",
+        model=build_model(s),
         tools=specialist_tools(s),
         system_prompt=DISPATCHER_SYSTEM_PROMPT,
         checkpointer=checkpointer,

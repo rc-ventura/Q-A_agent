@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-4o-mini"
+    openai_temperature: float = 0.0
     rag_min_score: float = 0.30
 
     @cached_property
