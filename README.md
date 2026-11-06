@@ -164,7 +164,7 @@ O enunciado pede que ambiguidades sejam resolvidas por uma interpretação razo�
 - **Identificação do cliente:** por nome completo ou e-mail, nunca por telefone, e sem autenticação forte. É aceitável para um protótipo e está listada nas limitações.
 - **Canal:** a interface web simula o atendimento. Integrar o WhatsApp real está fora do escopo.
 - **Ações transacionais:** o agente não cancela, altera nem reembolsa pedidos. Ele explica a regra e encaminha ao atendimento humano.
-- **Horário de resposta:** o agente responde a qualquer hora. Quando a dúvida depende de uma pessoa, informa o horário de funcionamento e o prazo de retorno do manual.
+- **Horário de resposta:** o agente responde a qualquer hora. Quando a dúvida depende de uma pessoa, informa o prazo de retorno (24 horas úteis) e o contato da equipe; o horário de funcionamento só aparece se o cliente perguntar, porque vem do manual de políticas.
 - **Valores que as fontes não trazem** (por exemplo, o frete para uma cidade específica): o agente diz que o valor não consta, explica o que o manual diz sobre o cálculo e indica o contato da equipe. Ele não estima.
 - **Conflitos entre fontes:** o manual traz dois números de WhatsApp (seção 1.2 e seção 7), e o agente usa o da seção 1.2. Nos pedidos #3 e #20, o total registrado difere da soma dos itens (R$ 3.450,00 contra R$ 3.498,00, e R$ 1.400,00 contra R$ 1.488,00; os dados não dizem o motivo), e o agente informa o total do pedido.
 - **Status de produto:** além de `active` e `inactive`, os dados têm `discontinued` e `coming_soon`, e o agente trata cada um: produto descontinuado sai do catálogo e o agente oferece modelos equivalentes em estoque; produto em breve (`coming_soon`) é informado como ainda indisponível, sem confirmar estoque nem preço.
