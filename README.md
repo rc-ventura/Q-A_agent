@@ -70,7 +70,7 @@ Você precisa de uma chave da API da OpenAI (enviada por e-mail pelo autor). Ela
 ### Opção A — Docker (recomendada)
 
 ```bash
-git clone <url-do-repositorio> && cd <repositorio>
+git clone https://github.com/rc-ventura/Q-A_agent.git && cd Q-A_agent
 docker compose up --build -d
 ```
 

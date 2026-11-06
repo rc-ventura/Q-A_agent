@@ -156,7 +156,7 @@ description: "Task list for feature implementation — agente de atendimento Emp
 - [x] T044 Create 3–5 example conversations em `examples/*.md` (FR-015/SC-005): cenários variados das 4 stories, incluindo ≥1 não trivial (devolução com regra do manual OU pergunta mista #8 do quickstart)
 - [x] T045 Remove o bloco "SYNC IMPACT REPORT" do topo de `.specify/memory/constitution.md` (regra de Governance: material temporário, remover antes do commit) e commit
 - [x] T046 Final validation: `uv run pytest` verde; `uv run pytest -m eval` verde com chave; percorrer o checklist do quickstart.md end-to-end cronometrado (<15 min do clone à primeira conversa — SC-006) a partir do Docker; registrar achados relevantes em `docs/learning-lessons/` (constituição V)
-- [ ] T047 Create public GitHub repo do projeto e push final com histórico acumulado (FR-013) — REQUER aprovação explícita do usuário antes de executar (push é efeito externo); nunca commitar `.env`
+- [x] T047 Create public GitHub repo do projeto e push final com histórico acumulado (FR-013) — REQUER aprovação explícita do usuário antes de executar (push é efeito externo); nunca commitar `.env`
 
 ---
 
