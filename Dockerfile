@@ -11,9 +11,6 @@ ENV UV_COMPILE_BYTECODE=1 \
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Embeddings locais do Chroma: baixa o modelo ONNX no build para o primeiro start nao depender de rede
-RUN python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()(['aquecimento'])"
-
 COPY agent ./agent
 COPY app ./app
 COPY data/source ./data/source
