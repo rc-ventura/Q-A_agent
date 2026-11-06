@@ -114,3 +114,39 @@ def test_unknown_category_text_falls_back_to_search_term(tools, category):
 
 def test_unknown_category_without_any_match_returns_empty(tools):
     assert _run(tools["search_products"], category="acessorios", in_stock_only=False) == []
+
+
+@pytest.mark.parametrize("limit", [0, -1])
+def test_search_limit_below_one_is_clamped(tools, limit):
+    res = _run(tools["search_products"], query="violao", limit=limit)
+    assert len(res) == 1
+
+
+def test_search_limit_is_capped(tools):
+    assert len(_run(tools["search_products"], query="", limit=1000)) <= 10
+
+
+@pytest.mark.parametrize(
+    "typed,expected",
+    [
+        ("ukulele Kalani KAL-700T Tenor", "Kalani KAL-700T Tenor Natural"),
+        ("violão Takamine GD20", "Takamine GD20 Dreadnought Natural"),
+        ("o Taylor 214ce", "Taylor 214ce Elétrico Aço Natural"),
+    ],
+)
+def test_details_tolerates_category_word_before_the_model_name(tools, typed, expected):
+    """Medido: o modelo envia 'ukulele Kalani KAL-700T Tenor' e o tool dizia not_found em ~2 de 10 consultas."""
+    res = _run(tools["get_product_details"], product_name=typed)
+    assert res.get("name") == expected, res
+
+
+def test_details_still_reports_not_found_for_unknown_product(tools):
+    res = _run(tools["get_product_details"], product_name="ukulele Fenderzinho Inexistente")
+    assert res["error"] == "not_found"
+
+
+def test_catalog_store_unavailable_does_not_leak_exception_text(tmp_path):
+    missing = str(tmp_path / "nada" / "store.db")
+    t = {x.name: x for x in make_catalog_tools(missing)}
+    assert _run(t["get_product_details"], product_name="takamine") == {"error": "store_unavailable"}
+    assert _run(t["search_products"], query="violao") == {"error": "store_unavailable"}

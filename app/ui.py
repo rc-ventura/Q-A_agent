@@ -1,10 +1,13 @@
+import logging
 import uuid
 
 import gradio as gr
 
-from app.bootstrap import activate_key, check_api_key, ensure_data
+from app.bootstrap import activate_key, check_api_key, ensure_data, startup_key_state
 from app.chat import stream_reply
 from agent.settings import Settings, get_settings
+
+logger = logging.getLogger(__name__)
 
 TITLE = "# Empório da Música\nAtendimento ao cliente"
 
@@ -30,6 +33,34 @@ async def respond(message: str, history: list, thread_id: str):
     async with local_agent() as graph:
         async for snapshot in stream_reply(graph, message, thread_id):
             yield snapshot
+
+
+def handle_key_submission(key: str, settings: Settings):
+    """Fluxo F0: valida e grava a chave; alterna a tela de configuracao pelo chat.
+
+    Returns:
+        ``(mensagem, campo, coluna_onboarding, coluna_chat)`` para os outputs do Gradio.
+    """
+    error = activate_key(key or "", settings=settings)
+    if error:
+        return error, gr.Textbox(), gr.Column(visible=True), gr.Column(visible=False)
+    return "", gr.Textbox(value=""), gr.Column(visible=False), gr.Column(visible=True)
+
+
+def prepare_for_launch(settings: Settings) -> bool:
+    """Prepara os dados na partida sem derrubar o app se a preparacao falhar.
+
+    Returns:
+        True quando os dados estao prontos. Em falha (ex.: sem rede para os embeddings)
+        registra so o tipo do erro e devolve False: o chat abre e o primeiro uso
+        mostra a mensagem amigavel em vez de um traceback na partida.
+    """
+    try:
+        ensure_data(settings)
+    except Exception as exc:
+        logger.error("preparo dos dados na partida falhou: %s", type(exc).__name__)
+        return False
+    return True
 
 
 def build_ui(has_valid_key: bool, settings: Settings | None = None) -> gr.Blocks:
@@ -70,10 +101,7 @@ def build_ui(has_valid_key: bool, settings: Settings | None = None) -> gr.Blocks
             chatbot.clear(new_thread_id, outputs=[thread])
 
         def submit_key(key: str):
-            error = activate_key(key or "", settings=settings)
-            if error:
-                return error, gr.Textbox(), gr.Column(visible=True), gr.Column(visible=False)
-            return "", gr.Textbox(value=""), gr.Column(visible=False), gr.Column(visible=True)
+            return handle_key_submission(key, settings)
 
         save_button.click(
             submit_key,
@@ -88,7 +116,10 @@ def launch() -> None:
     """Sobe a UI na porta 7860, preparando os dados quando ja ha chave valida."""
     settings = get_settings()
     key = settings.openai_api_key
-    has_valid_key = bool(key) and check_api_key(key.get_secret_value()) is None
+    state = startup_key_state(key.get_secret_value() if key else None, check=check_api_key)
+    has_valid_key = state in ("ok", "unverified")
+    if state == "unverified":
+        logger.warning("chave nao verificada na partida (rede ou servico fora); seguindo para o chat")
     if has_valid_key:
-        ensure_data(settings)
+        prepare_for_launch(settings)
     build_ui(has_valid_key, settings).launch()

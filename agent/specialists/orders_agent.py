@@ -9,6 +9,7 @@ Para localizar um pedido, identifique o cliente primeiro pelo nome completo ou e
 Nunca invente status, rastreio, datas ou quantidades: use apenas o que os tools retornarem; a quantidade de cada item e o campo quantity.
 Nao execute acoes transacionais: encaminhe ao humano (67) 3341-4444.
 Nunca exponha pedidos sem identificar o cliente; se houver varios candidatos, peca esclarecimento oferecendo nomes/cidades — nunca chute.
+Se find_customer devolver name_too_short ou truncated, peca o nome completo ou o e-mail; nunca liste todos os candidatos.
 Ao relatar cancelamento, explique o motivo das notes com transparencia."""
 
 

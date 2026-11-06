@@ -17,5 +17,9 @@ data/runtime/
 # Material original do desafio (copiado com nomes limpos para data/source/)
 Desafio Técnico AI Engineer 2026 2/
 
+# Ferramentas locais de desenvolvimento
+.coverage
+.playwright-mcp/
+
 # OS
 .DS_Store

@@ -76,3 +76,24 @@ def test_dispatcher_separates_complaints_from_policy_questions():
     assert "sem perguntar" in prompt
     assert "arrependimento" in prompt and "defeito" in prompt
     assert "delegue tambem a politicas" in prompt
+
+
+def test_catalog_answers_named_campaign_in_first_sentence():
+    """Medido: 8/10 sem a regra; o modelo respondia com outra promocao e nunca dizia que a campanha nao vige."""
+    prompt = CATALOG.lower()
+    assert "primeira frase" in prompt
+    assert "nao esta vigente" in prompt
+
+
+def test_dispatcher_keeps_conditions_when_merging_answers():
+    """Medido: 'sem juros' sumia na recomposicao de pergunta mista (8/10)."""
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "sem juros" in prompt and "parcela minima" in prompt
+
+
+def test_dispatcher_always_calls_policies_when_payment_terms_are_mentioned():
+    """Medido: perguntas de produto + parcelamento/PIX saiam so com o catalogo em ~2 de 10 rodadas."""
+    prompt = DISPATCHER_SYSTEM_PROMPT.lower()
+    assert "mesmo que" in prompt
+    for term in ["parcelar", "pix", "frete"]:
+        assert term in prompt, term

@@ -71,3 +71,32 @@ def test_dispatcher_prefers_policies_when_in_doubt():
     prompt = DISPATCHER_SYSTEM_PROMPT.lower()
     assert "na duvida" in prompt and "prefira politicas" in prompt
     assert "use o especialista atendimento" not in prompt
+
+
+class _FailingAgent:
+    async def ainvoke(self, payload):
+        raise RuntimeError("falha interna com detalhe sensivel sk-xyz")
+
+
+class _OkAgent:
+    async def ainvoke(self, payload):
+        from langchain_core.messages import AIMessage
+
+        return {"messages": [AIMessage(content="resposta do especialista")]}
+
+
+def test_specialist_failure_becomes_tool_result_not_exception():
+    """Excecao no especialista deixaria tool_calls sem ToolMessage no checkpoint e travaria a conversa."""
+    from agent.graph import _wrap_specialist
+
+    tool = _wrap_specialist("catalog", "desc", _FailingAgent())
+    result = asyncio.run(tool.ainvoke({"question": "quanto custa?"}))
+    assert "não consegui" in result.lower()
+    assert "sk-xyz" not in result and "RuntimeError" not in result
+
+
+def test_specialist_success_is_passed_through():
+    from agent.graph import _wrap_specialist
+
+    tool = _wrap_specialist("catalog", "desc", _OkAgent())
+    assert asyncio.run(tool.ainvoke({"question": "oi"})) == "resposta do especialista"

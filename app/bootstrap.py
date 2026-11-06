@@ -11,6 +11,8 @@ from agent.settings import Settings, save_api_key
 
 logger = logging.getLogger(__name__)
 
+INVALID_KEY_MESSAGE = "Chave inválida ou sem permissão. Confira e tente de novo."
+
 
 def _default_client(key: str) -> OpenAI:
     return OpenAI(api_key=key, timeout=15)
@@ -34,11 +36,31 @@ def check_api_key(key: str, client_factory: Callable[[str], OpenAI] = _default_c
     try:
         client_factory(key).models.list()
     except openai.AuthenticationError:
-        return "Chave inválida ou sem permissão. Confira e tente de novo."
+        return INVALID_KEY_MESSAGE
     except Exception as exc:
         logger.error("validacao da chave nao concluida: %s", type(exc).__name__)
         return "Não foi possível validar a chave agora (sem conexão ou serviço indisponível). Tente novamente."
     return None
+
+
+def startup_key_state(
+    key: str | None, check: Callable[[str], str | None] = check_api_key
+) -> str:
+    """Classifica a chave guardada na partida do app.
+
+    Returns:
+        ``missing`` sem chave; ``ok`` quando aceita; ``rejected`` quando a OpenAI a
+        recusa; ``unverified`` quando a checagem nao concluiu (rede ou servico fora).
+        Uma chave ``unverified`` nao deve mandar o usuario de volta ao onboarding:
+        o problema e transitorio e o chat reporta qualquer falha real.
+    """
+    key = (key or "").strip()
+    if not key:
+        return "missing"
+    error = check(key)
+    if error is None:
+        return "ok"
+    return "rejected" if error == INVALID_KEY_MESSAGE else "unverified"
 
 
 def ensure_data(settings) -> None:

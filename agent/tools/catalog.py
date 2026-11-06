@@ -7,6 +7,8 @@ from langchain_core.tools import tool
 
 from agent.tools.db import open_readonly
 
+MAX_LIMIT = 10
+
 _ROWS_SQL = """
 SELECT p.product_id, p.name, p.description, p.specs, p.price_brl,
        p.stock_quantity, p.status, c.name AS category,
@@ -83,8 +85,8 @@ def make_catalog_tools(db_path: str) -> list:
         """
         try:
             conn = open_readonly(db_path)
-        except sqlite3.Error as exc:
-            return json.dumps({"error": "store_unavailable", "detail": str(exc)}, ensure_ascii=False)
+        except sqlite3.Error:
+            return json.dumps({"error": "store_unavailable"})
         try:
             rows = conn.execute(f"{_ROWS_SQL} {_ACTIVE_ONLY}").fetchall()
             category_names = [r[0] for r in conn.execute("SELECT name FROM categories")]
@@ -118,7 +120,7 @@ def make_catalog_tools(db_path: str) -> list:
                 continue
             results.append(_summary(row))
         results.sort(key=lambda i: i["active_promotion"]["final_price_brl"] if i["active_promotion"] else i["price_brl"])
-        return json.dumps(results[:limit], ensure_ascii=False)
+        return json.dumps(results[: max(1, min(limit, MAX_LIMIT))], ensure_ascii=False)
 
     @tool
     def get_product_details(product_name: str) -> str:
@@ -133,17 +135,22 @@ def make_catalog_tools(db_path: str) -> list:
         """
         try:
             conn = open_readonly(db_path)
-        except sqlite3.Error as exc:
-            return json.dumps({"error": "store_unavailable", "detail": str(exc)}, ensure_ascii=False)
+        except sqlite3.Error:
+            return json.dumps({"error": "store_unavailable"})
         try:
             rows = conn.execute(_ROWS_SQL).fetchall()
         finally:
             conn.close()
         tokens = [t for t in _norm(product_name).split() if t]
+        # O modelo costuma antepor a categoria ao modelo ("ukulele Kalani KAL-700T"):
+        # cada termo pode estar no nome ou na categoria do produto.
         matches = [
             row
             for row in rows
-            if tokens and all(t in _norm(row["name"]) for t in tokens)
+            if tokens
+            and all(
+                t in _norm(row["name"]) or _category_matches(t, row["category"]) for t in tokens
+            )
         ]
         if not matches:
             suggestions = difflib.get_close_matches(

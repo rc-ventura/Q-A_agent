@@ -77,3 +77,31 @@ def test_save_api_key_rejects_malformed_key(monkeypatch, tmp_path, bad):
         save_api_key(bad, env_path=env)
     assert not env.exists()
     assert os.environ["OPENAI_API_KEY"] == "antiga"
+
+
+def test_save_api_key_creates_file_private_from_the_start(monkeypatch, tmp_path):
+    """Com umask 022, write_text + chmod deixa uma janela com o arquivo legivel por outros."""
+    monkeypatch.setenv("OPENAI_API_KEY", "antiga")
+    env = tmp_path / ".env"
+    old = os.umask(0o022)
+    try:
+        modes = []
+        real_open = os.open
+
+        def spy(path, flags, mode=0o777, **kw):
+            modes.append(mode)
+            return real_open(path, flags, mode, **kw)
+
+        monkeypatch.setattr(os, "open", spy)
+        save_api_key("sk-nova", env_path=env)
+    finally:
+        os.umask(old)
+    assert modes and modes[0] == 0o600
+
+
+def test_save_api_key_replaces_export_prefixed_line(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENAI_API_KEY", "antiga")
+    env = tmp_path / ".env"
+    env.write_text("export OPENAI_API_KEY=velha\n")
+    save_api_key("sk-nova", env_path=env)
+    assert env.read_text() == "OPENAI_API_KEY=sk-nova\n"

@@ -58,6 +58,12 @@ Negativas:
   chuta especialista errado) — mitigacao: descricoes das ferramentas-roteador
   declarativas + eval de rota por dominio.
 - Mais superficie de teste (dispatcher + 4 especialistas).
+- Semantica de falha do especialista-como-tool: uma excecao dentro do especialista (rate
+  limit, timeout, erro de embedding) escaparia do ToolNode e deixaria no checkpoint uma
+  chamada de tool sem resposta, o que impede a conversa de continuar (achado na revisao
+  SDD, ciclo 1). Por isso o wrapper captura a excecao, registra so o tipo e devolve uma
+  mensagem em portugues como resultado da tool; o dispatcher a repassa ao cliente e a
+  thread segue utilizavel.
 
 Fonte: research.md D9; decisao do autor de 2026-11-04 ("monte com a
 arquitetura dispatcher").

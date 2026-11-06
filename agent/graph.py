@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from langchain.agents import create_agent
@@ -7,6 +8,13 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from agent import specialists
 from agent.prompt import DISPATCHER_SYSTEM_PROMPT
 from agent.settings import Settings, get_settings
+
+logger = logging.getLogger(__name__)
+
+SPECIALIST_FAILURE_MESSAGE = (
+    "Não consegui consultar essa informação agora. Peça ao cliente para tentar de novo "
+    "ou indique o atendimento humano pelo WhatsApp (67) 3341-4444."
+)
 
 _SPECIALIST_SPECS = [
     ("catalog", "Perguntas sobre produtos, precos, estoque, promocoes, produtos descontinuados e indicacoes de instrumentos.", specialists.catalog),
@@ -32,13 +40,20 @@ def _wrap_specialist(name: str, description: str, agent):
     """Encapsula um especialista compilado como tool do dispatcher.
 
     O dispatcher chama a tool com a pergunta completa do cliente; a tool
-    executa o especialista e devolve a resposta textual dele.
+    executa o especialista e devolve a resposta textual dele. Uma falha do
+    especialista (rate limit, timeout, erro de embedding) vira resultado da
+    tool em vez de excecao: se a excecao escapasse, o checkpoint ficaria com
+    ``tool_calls`` sem ``ToolMessage`` e a conversa nao poderia continuar.
     """
 
     @tool
     async def _run(question: str) -> str:
         """Delega a pergunta do cliente ao especialista do dominio."""
-        result = await agent.ainvoke({"messages": [("user", question)]})
+        try:
+            result = await agent.ainvoke({"messages": [("user", question)]})
+        except Exception as exc:
+            logger.error("especialista %s falhou: %s", name, type(exc).__name__)
+            return SPECIALIST_FAILURE_MESSAGE
         return result["messages"][-1].content
 
     _run.name = f"specialist_{name}"

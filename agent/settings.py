@@ -1,4 +1,5 @@
 import os
+import re
 from functools import cached_property
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ROOT = Path(__file__).resolve().parent.parent
+_KEY_LINE = re.compile(r"^\s*(export\s+)?OPENAI_API_KEY\s*=")
 
 
 class Settings(BaseSettings):
@@ -72,10 +74,14 @@ def save_api_key(key: str, env_path: Path | None = None) -> None:
     env_path = env_path or (_ROOT / ".env")
     lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
     entry = f"OPENAI_API_KEY={key}"
-    if any(line.startswith("OPENAI_API_KEY=") for line in lines):
-        lines = [entry if line.startswith("OPENAI_API_KEY=") else line for line in lines]
+    if any(_KEY_LINE.match(line) for line in lines):
+        lines = [entry if _KEY_LINE.match(line) else line for line in lines]
     else:
         lines.append(entry)
-    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Cria com 0600 desde o primeiro byte (write_text + chmod deixaria uma janela legivel
+    # por outros usuarios) e restringe tambem um arquivo preexistente mais permissivo.
+    fd = os.open(env_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
     env_path.chmod(0o600)
     os.environ["OPENAI_API_KEY"] = key

@@ -137,7 +137,9 @@ Memória da conversa: AsyncSqliteSaver (um thread_id por conversa)
 
 O desenvolvimento seguiu TDD, e o critério de aceite é a bateria contra o agente real ([ADR-0008](docs/adrs/0008-bateria-de-eval-com-llm-real-como-aceite.md)). Os testes unitários rodam offline (`uv run pytest`). A bateria de eval (`uv run pytest -m eval`) roda as perguntas-ouro do quickstart contra o agente real, com asserções de fatos-chave, resposta em até 30 s e cenários de acompanhamento com referência anafórica.
 
-Resultado na versão final: **37 de 37 casos** (11 de catálogo, 12 de políticas, pedidos, perguntas mistas, acompanhamento multi-turno e 6 de persona/escopo), cada resposta em até 30 s, em ~3,5 minutos. Duas rodadas imediatamente anteriores, já com as correções principais, tiveram 35 de 37, com falhas em casos diferentes por variação do modelo. Por isso, os casos de roteamento sensíveis foram também medidos 10 vezes cada (10/10 em reclamação com prazo de 24 h, arrependimento, troca por defeito e troca por preferência).
+Resultado na versão final: **43 de 43 casos** (11 de catálogo, 12 de políticas, 14 de pedidos, perguntas mistas, acompanhamento multi-turno e cenários da spec, e 6 de persona e escopo), cada resposta em até 30 s, em 3 min 39 s. O número varia entre execuções: na mesma versão do código, as rodadas completas desta fase deram 41/43, 40/43 e 43/43, sempre com falhas em casos diferentes (variação do `gpt-4o-mini`). Por isso os casos de fronteira foram medidos 10 vezes cada, e o que ficou abaixo de 9/10 virou correção com teste: Black Friday inativa (8/10 para 10/10, regra de primeira frase no especialista de catálogo), parcelamento no preço de um produto (8/10 para 10/10, o dispatcher passou a chamar políticas sempre que a mensagem citar pagamento) e `get_product_details` que não aceitava "ukulele Kalani KAL-700T" (a categoria antes do modelo; defeito da tool, 7/10 para 10/10 no especialista). Os demais casos de fronteira medidos ficaram em 10/10 (reclamação com prazo de 24 h, arrependimento, troca por defeito, troca por preferência, desconto no PIX, parcelamento, baixo descontinuado).
+
+Uma exceção conhecida: na pergunta "se eu comprar no PIX, ganho mais 5% em cima da promoção?", o agente omite a regra de não cumulatividade em cerca de 1 de cada 5 execuções (14 de 18 medidas): às vezes o dispatcher responde só com o catálogo, sem consultar políticas. O caso continua na bateria e pode falhar numa rodada.
 
 Fluxo do avaliador validado a partir de um clone limpo (sem `.env`): `docker compose up --build`, onboarding da chave e primeira resposta em 26 s com cache de camadas; o build a frio levou cerca de 2 minutos.
 
@@ -145,20 +147,25 @@ A primeira execução da bateria, com todos os testes unitários verdes, falhou 
 
 ## Limitações conhecidas
 
-- **Identificação do cliente é leve.** O cliente se identifica por nome completo ou e-mail, sem autenticação. Quem souber o nome de outra pessoa vê os pedidos dela. A busca devolve só nome e cidade para minimizar exposição, mas isso não é autenticação.
-- **Sem controle de acesso à configuração da chave.** Quem alcança a porta 7860 pode trocar a chave, inclusive pela API do Gradio mesmo com a tela já oculta. Para uso local ou em demonstração isso basta; em rede aberta não.
+- **Identificação do cliente é só uma regra de prompt.** O agente pede nome completo ou e-mail, mas a tool `list_customer_orders` aceita qualquer `customer_id`, sem vínculo com o cliente que se identificou, e a busca por nome é por trecho (mínimo de 3 letras, no máximo 5 candidatos). Quem souber o nome de outra pessoa vê os pedidos dela, e uma mensagem forjada para o modelo (prompt injection) poderia pedir pedidos por ID. A busca devolve só nome e cidade para minimizar exposição, mas isso não é autenticação.
+- **Sem controle de acesso à configuração da chave.** Quem alcança a porta 7860 pode trocar a chave, inclusive pela API do Gradio mesmo com a tela já oculta. Por isso o `docker-compose.yml` publica a porta só em `127.0.0.1`; para expor em rede seria preciso autenticação.
+- **Sem limite de taxa nem de gasto.** Qualquer um que use a interface consome a chave da OpenAI, sem teto por sessão.
+- **Dependências com avisos conhecidos, não alcançáveis aqui.** `pip-audit` aponta avisos no Pillow (transitivo do Gradio, o app não recebe imagens) e no chromadb (carregamento remoto de modelos e autorização do modo servidor; o app usa o cliente embarcado). Devem ser atualizados quando houver versão corrigida.
+- **Imagem Docker roda como root e sem `HEALTHCHECK`.** Aceitável para uma demonstração local.
 - **Retenção ilimitada.** Os checkpoints de conversa ficam no SQLite sem expiração nem rotina de limpeza, e guardam o que o cliente escreveu.
 - **Pensado para uma conversa por vez.** Cada conversa tem seu próprio `thread_id`, mas não houve teste de carga ou de concorrência alta; SQLite e um único processo não foram dimensionados para isso.
 - **A chave não sobrevive a `docker compose down`.** Só `data/runtime/` está em volume; o `.env` gravado pela tela vive no sistema de arquivos do container e é recriado por `down` + `up`. `restart` e `stop`/`start` preservam.
 - **Não há integração com WhatsApp real**, só a interface web; o manual menciona o canal.
-- **Respostas de LLM variam entre execuções.** A bateria passou integralmente na última rodada, mas rodadas anteriores falharam em casos diferentes por variação do modelo. Não há garantia de 100% por execução.
+- **Respostas de LLM variam entre execuções.** A bateria de 43 casos passou integralmente na última rodada, mas rodadas da mesma versão deram 40/43 e 41/43, com falhas em casos diferentes. Não há garantia de 100% por execução, e o caso do PIX sobre promoção falha em cerca de 1 de cada 5.
 - **Fontes com inconsistências.** O manual traz dois números de WhatsApp (seção 1.2 e seção 7); o agente usa o da seção 1.2. O `data-model.md` previa só `active`/`inactive` para produtos, mas os dados têm também `discontinued` e `coming_soon`.
 - **Limiar de similaridade calibrado com poucas perguntas** (12 relevantes e 8 sem relação, medidas uma vez). Deve ser reavaliado se o manual crescer.
 
 ## O que eu faria com mais tempo
 
 - Eliminar o segundo salto de LLM: repassar a resposta do especialista direto (com streaming dos tokens dele) quando o roteador não precisa reescrever, reduzindo latência e custo.
-- Autenticação real para pedidos (e-mail mais código de verificação) e limite de tentativas.
+- Autenticação real para pedidos (e-mail mais código de verificação), `customer_id` vinculado ao cliente identificado na sessão, e limite de tentativas e de gasto por sessão.
+- Imagem Docker sem root, com `HEALTHCHECK`, e atualização do Pillow e do chromadb quando houver versão corrigida.
+- Reaproveitar um único grafo e um único checkpointer entre requisições, em vez de recriá-los a cada mensagem.
 - Avaliação mais robusta: juiz LLM para qualidade de tom, múltiplas execuções por caso para medir variância, testes de prompt injection e de tentativa de extrair dados de outros clientes.
 - Observabilidade (traces por turno com LangSmith ou OpenTelemetry) e CI rodando unitários a cada push e a bateria sob demanda.
 - Checkpointer em Postgres com expiração configurável, e persistência da chave fora do container.

@@ -8,6 +8,8 @@ from agent.policies_rag import open_policies, search_policies as _rag_search
 from agent.settings import Settings
 from agent.tools.store_info import get_store_info as _store_info
 
+MAX_TOP_K = 5
+
 _collection_cache: dict[str, object] = {}
 _collection_lock = threading.Lock()
 
@@ -42,6 +44,7 @@ def make_policies_tools(settings: Settings, collection=None, min_score: float | 
         SOMENTE nesses trechos. Se vier {"retrieval": "weak"}, a informação
         não consta no manual: declare o limite e ofereça o canal humano.
         """
+        top_k = max(1, min(top_k, MAX_TOP_K))
         try:
             hits = _rag_search(collection or _collection(settings), question, score, limit=top_k)
         except NotFoundError:

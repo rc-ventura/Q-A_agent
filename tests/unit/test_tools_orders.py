@@ -107,3 +107,29 @@ def test_orders_items_not_duplicated_after_reingest(tmp_path):
     tool = {t.name: t for t in make_orders_tools(str(path))}["list_customer_orders"]
     order = next(o for o in _run(tool, customer_id=2)["orders"] if o["order_id"] == 8)
     assert order["items"] == [{"name": order["items"][0]["name"], "quantity": 1}]
+
+
+@pytest.mark.parametrize("short", ["a", "an", "  a ", " "])
+def test_find_customer_rejects_too_short_name(tools, short):
+    """Um nome de 1-2 letras casa com quase todos os clientes (enumeracao)."""
+    res = _run(tools["find_customer"], name=short)
+    assert res["error"] == "name_too_short"
+    assert "matches" not in res
+
+
+def test_find_customer_caps_matches(tools):
+    res = _run(tools["find_customer"], name="mar")  # 8 clientes casam com "mar"
+    assert len(res["matches"]) <= 5
+    assert res["truncated"] is True
+
+
+def test_find_customer_short_name_with_exact_email_still_works(tools):
+    res = _run(tools["find_customer"], name="a", email="pedro.oliveira@jmail.com")
+    assert res["matches"][0]["customer_id"] == 3
+
+
+def test_store_unavailable_does_not_leak_exception_text(tmp_path):
+    missing = tmp_path / "nao-existe" / "store.db"
+    t = {x.name: x for x in make_orders_tools(str(missing))}
+    for res in (_run(t["find_customer"], name="Pedro Henrique"), _run(t["list_customer_orders"], customer_id=1)):
+        assert res == {"error": "store_unavailable"}

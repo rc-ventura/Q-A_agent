@@ -7,6 +7,9 @@ from langchain_core.tools import tool
 from agent.tools.db import open_readonly
 
 
+MIN_NAME_LENGTH = 3
+MAX_MATCHES = 5
+
 STATUS_PT = {
     "pending": "aguardando pagamento",
     "confirmed": "confirmado",
@@ -46,28 +49,38 @@ def make_orders_tools(db_path: str) -> list:
         Retorna {"matches": [{customer_id, name, city}]} — nunca inclui
         e-mail/telefone do cliente (minimização LGPD). 0 candidatos ou
         vários candidatos exigem esclarecimento, nunca chute. Chame com
-        ao menos um dos identificadores.
+        ao menos um dos identificadores. Nome com menos de 3 letras volta
+        {"error": "name_too_short"} (peça o nome completo ou o e-mail);
+        no máximo 5 candidatos voltam, com "truncated": true quando há mais
+        (peça o nome completo ou o e-mail).
         """
         if not name and not email:
             return json.dumps({"error": "missing_identifier"})
+        q_name, q_email = _norm(name).strip(), _norm(email).strip()
+        if len(q_name) < MIN_NAME_LENGTH:
+            if not q_email:
+                return json.dumps({"error": "name_too_short"})
+            q_name = ""
         try:
             conn = _open(db_path)
-        except sqlite3.Error as exc:
-            return json.dumps({"error": "store_unavailable", "detail": str(exc)}, ensure_ascii=False)
+        except sqlite3.Error:
+            return json.dumps({"error": "store_unavailable"})
         try:
             rows = conn.execute(
                 "SELECT customer_id, name, email, city FROM customers"
             ).fetchall()
         finally:
             conn.close()
-        q_name, q_email = _norm(name), _norm(email)
         matches = [
             {"customer_id": r["customer_id"], "name": r["name"], "city": r["city"]}
             for r in rows
             if (q_name and q_name in _norm(r["name"]))
             or (q_email and q_email == _norm(r["email"]))
         ]
-        return json.dumps({"matches": matches}, ensure_ascii=False)
+        payload: dict = {"matches": matches[:MAX_MATCHES]}
+        if len(matches) > MAX_MATCHES:
+            payload["truncated"] = True
+        return json.dumps(payload, ensure_ascii=False)
 
     @tool
     def list_customer_orders(customer_id: int) -> str:
@@ -82,8 +95,8 @@ def make_orders_tools(db_path: str) -> list:
         """
         try:
             conn = _open(db_path)
-        except sqlite3.Error as exc:
-            return json.dumps({"error": "store_unavailable", "detail": str(exc)}, ensure_ascii=False)
+        except sqlite3.Error:
+            return json.dumps({"error": "store_unavailable"})
         try:
             orders = conn.execute(
                 "SELECT order_id, status, order_date, total_brl, payment_method,"

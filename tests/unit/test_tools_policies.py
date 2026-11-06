@@ -82,3 +82,14 @@ def test_search_recovers_after_index_rebuild(tmp_path, monkeypatch):
     index_policies(settings, persist_dir=str(tmp_path), embedding_function=ef)
 
     assert "chunks" in _run(search, question="posso devolver porque me arrependi")
+
+
+@pytest.mark.parametrize("top_k", [0, -3])
+def test_top_k_below_one_is_clamped(tools, top_k):
+    res = _run(tools["search_policies"], question="posso devolver porque me arrependi", top_k=top_k)
+    assert len(res["chunks"]) == 1
+
+
+def test_top_k_is_capped(tools):
+    res = _run(tools["search_policies"], question="política de entrega e pagamento", top_k=500)
+    assert len(res["chunks"]) <= 5

@@ -2,7 +2,8 @@ services:
   emporio:
     build: .
     ports:
-      - "7860:7860"
+      # So o proprio computador acessa: a tela de chave nao tem autenticacao e o chat gasta a chave paga
+      - "127.0.0.1:7860:7860"
     env_file:
       - path: .env
         required: false

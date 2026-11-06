@@ -104,3 +104,25 @@ def test_activate_key_prepare_failure_returns_clear_message_without_details():
     )
     assert "dados" in message.lower()
     assert "sk-ok" not in message
+
+
+def test_startup_key_state_missing_when_no_key():
+    from app.bootstrap import startup_key_state
+
+    assert startup_key_state(None, check=lambda k: "nunca chamado") == "missing"
+    assert startup_key_state("   ", check=lambda k: "nunca chamado") == "missing"
+
+
+def test_startup_key_state_ok_and_rejected():
+    from app.bootstrap import INVALID_KEY_MESSAGE, startup_key_state
+
+    assert startup_key_state("sk-ok", check=lambda k: None) == "ok"
+    assert startup_key_state("sk-ruim", check=lambda k: INVALID_KEY_MESSAGE) == "rejected"
+
+
+def test_startup_key_state_network_failure_is_not_rejection():
+    """Chave guardada no .env nao pode virar 'invalida' so porque a rede caiu na partida."""
+    from app.bootstrap import startup_key_state
+
+    state = startup_key_state("sk-ok", check=lambda k: "Não foi possível validar a chave agora")
+    assert state == "unverified"
