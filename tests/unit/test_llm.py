@@ -3,6 +3,7 @@ from agent.settings import Settings
 
 
 def test_model_is_deterministic_by_default(monkeypatch):
+    monkeypatch.delenv("OPENAI_TEMPERATURE", raising=False)
     # Atendimento nao precisa de criatividade: temperatura 0 reduz a variancia medida na bateria.
     monkeypatch.setenv("OPENAI_API_KEY", "sk-unit-test")
     model = build_model(Settings())

@@ -105,3 +105,13 @@ def test_save_api_key_replaces_export_prefixed_line(monkeypatch, tmp_path):
     env.write_text("export OPENAI_API_KEY=velha\n")
     save_api_key("sk-nova", env_path=env)
     assert env.read_text() == "OPENAI_API_KEY=sk-nova\n"
+
+
+def test_temperature_must_be_between_0_and_2(monkeypatch):
+    import pytest
+    from pydantic import ValidationError
+
+    for bad in ("5", "-0.1"):
+        monkeypatch.setenv("OPENAI_TEMPERATURE", bad)
+        with pytest.raises(ValidationError):
+            Settings()

@@ -1,0 +1,114 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.2.0, pluggy-1.7.0 -- /Users/rafaelventura/CascadeProjects/Q&A_agent/.venv/bin/python
+rootdir: /Users/rafaelventura/CascadeProjects/Q&A_agent
+configfile: pyproject.toml
+testpaths: tests
+plugins: langsmith-0.14.17, anyio-4.16.0
+collecting ... collected 198 items / 155 deselected / 43 selected
+
+tests/eval/test_quickstart_battery.py::test_catalog_questions[golden1-violoes-ate-1000] PASSED [  2%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[golden2-takamine-gd20] PASSED [  4%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[gibson-preco-estoque] PASSED [  6%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[giannini-sem-estoque] PASSED [  9%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[promocao-original-percentual-final] PASSED [ 11%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[golden7-black-friday-inativa] FAILED [ 13%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[ukulele-mais-barato] PASSED [ 16%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[baterias-yamaha] PASSED [ 18%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[baixo-descontinuado] PASSED [ 20%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[teclado-ate-2000] PASSED [ 23%]
+tests/eval/test_quickstart_battery.py::test_catalog_questions[martin-ultima-unidade] PASSED [ 25%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[horario] PASSED [ 27%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[golden3-endereco] PASSED [ 30%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[golden4-arrependimento] PASSED [ 32%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[pix-desconto] PASSED [ 34%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[parcelamento] PASSED [ 37%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[frete-campo-grande] PASSED [ 39%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[troca-defeito] PASSED [ 41%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[garantia-legal] PASSED [ 44%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[prazo-pac] PASSED [ 46%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[lgpd-exclusao] PASSED [ 48%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[troca-preferencia] PASSED [ 51%]
+tests/eval/test_quickstart_battery.py::test_policy_questions[boquilha-nao-elegivel] PASSED [ 53%]
+tests/eval/test_quickstart_battery.py::test_golden5_orders_with_cancellation_reason PASSED [ 55%]
+tests/eval/test_quickstart_battery.py::test_order_lookup_asks_for_name_or_email_never_phone PASSED [ 58%]
+tests/eval/test_quickstart_battery.py::test_unknown_customer_is_not_invented PASSED [ 60%]
+tests/eval/test_quickstart_battery.py::test_golden6_accessory_redirect PASSED [ 62%]
+tests/eval/test_quickstart_battery.py::test_golden8_mixed_price_and_installments FAILED [ 65%]
+tests/eval/test_quickstart_battery.py::test_followup_resolves_anaphoric_reference PASSED [ 67%]
+tests/eval/test_quickstart_battery.py::test_followup_stock_after_price PASSED [ 69%]
+tests/eval/test_quickstart_battery.py::test_vague_request_resolved_within_two_exchanges PASSED [ 72%]
+tests/eval/test_quickstart_battery.py::test_out_of_stock_suggests_in_stock_alternatives PASSED [ 74%]
+tests/eval/test_quickstart_battery.py::test_pix_discount_not_stacked_on_promotion PASSED [ 76%]
+tests/eval/test_quickstart_battery.py::test_shipped_order_shows_tracking_and_eta PASSED [ 79%]
+tests/eval/test_quickstart_battery.py::test_customer_without_orders PASSED [ 81%]
+tests/eval/test_quickstart_battery.py::test_partial_product_name_is_resolved PASSED [ 83%]
+tests/eval/test_quickstart_battery.py::test_shipping_quote_not_in_sources_is_not_invented PASSED [ 86%]
+tests/eval/test_scope_and_persona.py::test_accessory_redirects_to_instruments PASSED [ 88%]
+tests/eval/test_scope_and_persona.py::test_out_of_scope_cordial_refusal PASSED [ 90%]
+tests/eval/test_scope_and_persona.py::test_complaint_empathy_and_24h PASSED [ 93%]
+tests/eval/test_scope_and_persona.py::test_vague_question_asks_clarification PASSED [ 95%]
+tests/eval/test_scope_and_persona.py::test_discount_negotiation_no_invention PASSED [ 97%]
+tests/eval/test_scope_and_persona.py::test_transactional_action_refused PASSED [100%]
+
+=================================== FAILURES ===================================
+_____________ test_catalog_questions[golden7-black-friday-inativa] _____________
+
+agent = <tests.eval.support.Agent object at 0x117f62660>
+question = 'Tem a promoção de Black Friday ainda?'
+required = [('não está', 'não há', 'não temos', 'encerrad', 'expirad', 'venc', ...)]
+forbidden = []
+
+    @pytest.mark.parametrize("question,required,forbidden", CATALOG_CASES)
+    def test_catalog_questions(agent, question, required, forbidden):
+>       assert_reply(agent.ask(question), required, forbidden)
+
+tests/eval/test_quickstart_battery.py:89: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+reply = Reply(text='atualmente, temos a promoção "oferta especial" na empório da música. um dos produtos em promoção é o **kal... em estoque.\n\nse precisar de mais informações ou de outros produtos, estou à disposição!', seconds=7.503531915950589)
+required = [('não está', 'não há', 'não temos', 'encerrad', 'expirad', 'venc', ...)]
+forbidden = []
+
+    def assert_reply(reply: Reply, required=(), forbidden=()) -> None:
+        """Valida fatos-chave (cada item de ``required`` e um grupo de alternativas) e a latencia."""
+        for alternatives in required:
+            options = (alternatives,) if isinstance(alternatives, str) else alternatives
+>           assert any(o in reply.text for o in options), f"faltou {options} em: {reply.text}"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: faltou ('não está', 'não há', 'não temos', 'encerrad', 'expirad', 'venc', 'não é mais', 'não estão') em: atualmente, temos a promoção "oferta especial" na empório da música. um dos produtos em promoção é o **kalani kal-700t tenor natural**, que está com 10% de desconto, de r$ 359,00 por r$ 323,10. no momento, temos 11 unidades em estoque.
+E           
+E           se precisar de mais informações ou de outros produtos, estou à disposição!
+
+tests/eval/support.py:64: AssertionError
+__________________ test_golden8_mixed_price_and_installments ___________________
+
+agent = <tests.eval.support.Agent object at 0x117f62660>
+
+    def test_golden8_mixed_price_and_installments(agent):
+        reply = agent.ask("Quanto custa o Taylor 214ce e dá pra parcelar em 12x?")
+>       assert_reply(reply, required=[price(7499.0), ("12x", "12 vezes"), "sem juros"])
+
+tests/eval/test_quickstart_battery.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+reply = Reply(text='o violão taylor 214ce está disponível por r$ 7.499,00 e há 2 unidades em estoque.\n\nquanto ao parcelament...ela mínima de r$ 100,00. \n\nse precisar de mais informações ou ajuda, estou à disposição!', seconds=8.010213708039373)
+required = [('7.499,00', '7499,00', '7499.00', '7.499', '7499'), ('12x', '12 vezes'), 'sem juros']
+forbidden = ()
+
+    def assert_reply(reply: Reply, required=(), forbidden=()) -> None:
+        """Valida fatos-chave (cada item de ``required`` e um grupo de alternativas) e a latencia."""
+        for alternatives in required:
+            options = (alternatives,) if isinstance(alternatives, str) else alternatives
+>           assert any(o in reply.text for o in options), f"faltou {options} em: {reply.text}"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: faltou ('sem juros',) em: o violão taylor 214ce está disponível por r$ 7.499,00 e há 2 unidades em estoque.
+E           
+E           quanto ao parcelamento, a opção de 12x é permitida, com uma parcela mínima de r$ 100,00. 
+E           
+E           se precisar de mais informações ou ajuda, estou à disposição!
+
+tests/eval/support.py:64: AssertionError
+=========================== short test summary info ============================
+FAILED tests/eval/test_quickstart_battery.py::test_catalog_questions[golden7-black-friday-inativa]
+FAILED tests/eval/test_quickstart_battery.py::test_golden8_mixed_price_and_installments
+=========== 2 failed, 41 passed, 155 deselected in 241.95s (0:04:01) ===========

@@ -3,7 +3,7 @@ import re
 from functools import cached_property
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-4o-mini"
-    openai_temperature: float = 0.0
+    openai_temperature: float = Field(default=0.0, ge=0, le=2)
     rag_min_score: float = 0.30
 
     @cached_property
