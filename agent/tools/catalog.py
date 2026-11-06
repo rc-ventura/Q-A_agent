@@ -144,10 +144,13 @@ def make_catalog_tools(db_path: str) -> list:
         tokens = [t for t in _norm(product_name).split() if t]
         # O modelo costuma antepor a categoria ao modelo ("ukulele Kalani KAL-700T"):
         # cada termo pode estar no nome ou na categoria do produto.
+        # Pelo menos um termo precisa casar com o NOME: so a categoria ("violao") nao
+        # identifica um produto e deve cair em not_found com sugestoes.
         matches = [
             row
             for row in rows
             if tokens
+            and any(t in _norm(row["name"]) for t in tokens)
             and all(
                 t in _norm(row["name"]) or _category_matches(t, row["category"]) for t in tokens
             )

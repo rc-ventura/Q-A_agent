@@ -150,3 +150,10 @@ def test_catalog_store_unavailable_does_not_leak_exception_text(tmp_path):
     t = {x.name: x for x in make_catalog_tools(missing)}
     assert _run(t["get_product_details"], product_name="takamine") == {"error": "store_unavailable"}
     assert _run(t["search_products"], query="violao") == {"error": "store_unavailable"}
+
+
+@pytest.mark.parametrize("category_only", ["violão", "ukulele", "baixo", "guitarra"])
+def test_details_does_not_pick_an_arbitrary_product_for_a_category_only_query(tools, category_only):
+    """Revisao SDD ciclo 2: casar so pela categoria devolvia um produto qualquer em vez de not_found."""
+    res = _run(tools["get_product_details"], product_name=category_only)
+    assert res["error"] == "not_found", res
