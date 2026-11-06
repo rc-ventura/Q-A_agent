@@ -4,6 +4,56 @@ Agente de atendimento ao cliente de uma loja de instrumentos musicais fictícia 
 
 A decisão central do desafio, saber quando consultar **dados** e quando consultar **políticas**, é explícita na interface: cada consulta aparece como um bloco recolhível ("Consultando catálogo…", "Consultando políticas…", "Consultando pedidos…").
 
+## Prova de funcionamento
+
+Capturas da UI rodando o agente real (`gpt-4o-mini`) em 2026-11-05, sem edição das respostas. Os fatos de cada resposta foram conferidos contra os CSVs e o PDF; as mesmas perguntas estão automatizadas na bateria de eval (`uv run pytest -m eval`).
+
+| O desafio pede | Evidência |
+|---|---|
+| Consultar **dados** (disponibilidade, preço) | [1](#1-catálogo-filtro-por-categoria-e-preço) violões até R$ 1.000 com estoque; [4](#4-memória-da-conversa-dado-e-política-na-mesma-conversa) preço do Takamine GD20 |
+| Consultar **políticas** (troca, pagamento) | [2](#2-política-de-devolução-por-arrependimento) devolução por arrependimento; [4](#4-memória-da-conversa-dado-e-política-na-mesma-conversa) parcelamento |
+| Saber **quando** usar cada fonte | blocos "Consultando catálogo…", "Consultando políticas…", "Consultando pedidos…" em 1 a 4 |
+| Status de pedido | [3](#3-pedido-identificação-antes-de-expor-dados) identificação por nome antes de mostrar pedidos, com motivo do cancelamento |
+| **Fora do escopo** e **persona** | [5](#5-acessórios-fora-do-escopo-e-reclamação) acessórios, pergunta alheia à loja, reclamação com prazo de retorno |
+| Situação **não trivial** | [2](#2-política-de-devolução-por-arrependimento) regra do manual aplicada; [4](#4-memória-da-conversa-dado-e-política-na-mesma-conversa) "e dá pra parcelar?" resolvido pelo contexto da mensagem anterior |
+| Configuração do provedor sem editar arquivos | [0](#0-configuração-da-chave-no-primeiro-acesso) tela de chave, com validação |
+
+#### 0. Configuração da chave no primeiro acesso
+
+Sem `OPENAI_API_KEY`, o app abre nesta tela. A chave é validada na OpenAI antes de ser gravada; aqui, uma chave inválida de demonstração.
+
+![Tela de configuração da chave com erro de chave inválida](docs/images/00-onboarding-chave.png)
+
+#### 1. Catálogo: filtro por categoria e preço
+
+"Violões até R$ 1.000" vira filtro SQL (categoria, preço, estoque > 0). Os cinco produtos, preços e estoques são os do `products.csv`.
+
+![Lista de violões até R$ 1.000 com preço e estoque](docs/images/01-catalogo-violoes.png)
+
+#### 2. Política de devolução por arrependimento
+
+Resposta tirada da seção 4.1 do manual: 7 dias corridos, embalagem original, reembolso em até 10 dias úteis, frete de devolução pago pela loja.
+
+![Resposta sobre devolução por arrependimento](docs/images/02-politica-arrependimento.png)
+
+#### 3. Pedido: identificação antes de expor dados
+
+O agente pede nome completo ou e-mail (nunca telefone) e só então lista os pedidos: #19 cancelado por pagamento não confirmado e #1 entregue com rastreio BRAB1234567BR.
+
+![Consulta de pedidos com identificação do cliente](docs/images/03-pedido-identificacao.png)
+
+#### 4. Memória da conversa: dado e política na mesma conversa
+
+A segunda pergunta não repete o produto; o agente usa o histórico (checkpointer SQLite) e aplica a regra de parcela mínima de R$ 100.
+
+![Preço do Takamine GD20 seguido de pergunta sobre parcelamento](docs/images/04-multiturno-dados-e-politica.png)
+
+#### 5. Acessórios, fora do escopo e reclamação
+
+A loja só vende instrumentos; pergunta alheia recebe recusa cordial; reclamação recebe empatia e o prazo de retorno de 24 horas úteis.
+
+![Recusa de acessórios, recusa fora do escopo e tratamento de reclamação](docs/images/05-escopo-persona-reclamacao.png)
+
 ## Como rodar
 
 Você precisa de uma chave da API da OpenAI (enviada por e-mail pelo autor). Ela é colada na tela de configuração do app no primeiro acesso: não é preciso editar arquivos.
@@ -75,23 +125,23 @@ Memória da conversa: AsyncSqliteSaver (um thread_id por conversa)
 
 **Dispatcher + especialistas ([ADR-0004](docs/adrs/0004-arquitetura-dispatcher.md)).** Um roteador leve delega a especialistas de domínio, um por user story, cada um com prompt e tools próprios e testável isoladamente. Torna o roteamento dados-vs-políticas visível na UI. O custo é real: cada pergunta passa por dois modelos (roteador e especialista) e o roteador reescreve a resposta, o que soma latência e tokens.
 
-**LLM: OpenAI `gpt-4o-mini`.** Tool calling maduro e custo baixo por conversa. A chave fica no `.env` local (permissão 0600), é mascarada no `repr` das configurações e não aparece em logs nem em mensagens de erro.
+**LLM: OpenAI `gpt-4o-mini`.** Tool calling maduro e custo baixo por conversa. A chave é colada na tela inicial, validada na OpenAI antes de ser gravada no `.env` local (permissão 0600), mascarada no `repr` das configurações e nunca aparece em logs nem em mensagens de erro ([ADR-0006](docs/adrs/0006-chave-openai-pela-ui-gravada-no-env.md)).
 
 **Retrieval híbrido ([ADR-0002](docs/adrs/0002-arquitetura-hibrida-tools-rag.md)).** Dados tabulares (preço, estoque, pedidos) vão por function calling sobre SQLite aberto somente para leitura: filtros e contas exatos, sem depender de embedding. Texto livre (o manual de políticas) vai por RAG: chunking por seção numerada do manual, título da seção embutido no vetor, IDs determinísticos, limiar mínimo de similaridade e sinal explícito de recuperação fraca para o agente declarar o limite em vez de improvisar. Embeddings `text-embedding-3-small` em espaço cosseno: nas 12 perguntas de política da bateria a seção correta ficou no top-3 em 12/12, contra 8/12 do modelo padrão do Chroma, que é em inglês ([ADR-0005](docs/adrs/0005-embeddings-openai-no-indice-de-politicas.md)).
 
 **Estratégia de prompt.** O roteador tem as regras duras (nunca inventar preço/estoque, nada de ações transacionais, recusa de fora de escopo) e é obrigado a delegar; perguntas mistas acionam todos os especialistas envolvidos. Cada especialista tem regras do seu domínio (promoção sempre com preço original, percentual e preço final; citar o manual literalmente; identificar o cliente por nome completo ou e-mail antes de mostrar pedidos). As regras são verificadas por testes de marcadores nos prompts e, principalmente, pela bateria de eval.
 
-**Persistência e deploy ([ADR-0001](docs/adrs/0001-runtime-single-container.md)).** Um único processo e um único container: UI, agente e `AsyncSqliteSaver` juntos. Para um avaliador isso significa uma chave, um comando e nenhum Postgres/Redis a subir.
+**Persistência e deploy ([ADR-0001](docs/adrs/0001-runtime-single-container.md)).** Um único processo e um único container: UI, agente e `AsyncSqliteSaver` juntos. Para um avaliador isso significa uma chave, um comando e nenhum Postgres/Redis a subir. O SQLite e o índice vetorial são derivados dos CSVs e do PDF e reconstruídos a cada inicialização, então um volume antigo nunca serve dados de versão anterior ([ADR-0007](docs/adrs/0007-dados-de-runtime-reconstruidos-a-cada-start.md)).
 
 ## Qualidade e o que a avaliação revelou
 
-O desenvolvimento seguiu TDD. Os testes unitários rodam offline (`uv run pytest`). A bateria de eval (`uv run pytest -m eval`) roda as perguntas-ouro do quickstart contra o agente real, com asserções de fatos-chave, resposta em até 30 s e cenários de acompanhamento com referência anafórica.
+O desenvolvimento seguiu TDD, e o critério de aceite é a bateria contra o agente real ([ADR-0008](docs/adrs/0008-bateria-de-eval-com-llm-real-como-aceite.md)). Os testes unitários rodam offline (`uv run pytest`). A bateria de eval (`uv run pytest -m eval`) roda as perguntas-ouro do quickstart contra o agente real, com asserções de fatos-chave, resposta em até 30 s e cenários de acompanhamento com referência anafórica.
 
 Resultado na versão final: **37 de 37 casos** (11 de catálogo, 12 de políticas, pedidos, perguntas mistas, acompanhamento multi-turno e 6 de persona/escopo), cada resposta em até 30 s, em ~3,5 minutos. Duas rodadas imediatamente anteriores, já com as correções principais, tiveram 35 de 37, com falhas em casos diferentes por variação do modelo. Por isso, os casos de roteamento sensíveis foram também medidos 10 vezes cada (10/10 em reclamação com prazo de 24 h, arrependimento, troca por defeito e troca por preferência).
 
 Fluxo do avaliador validado a partir de um clone limpo (sem `.env`): `docker compose up --build`, onboarding da chave e primeira resposta em 26 s com cache de camadas; o build a frio levou cerca de 2 minutos.
 
-A primeira execução da bateria, com todos os testes unitários verdes, falhou em 11 de 36 casos. As causas, registradas em [LL-0002](docs/learning-lessons/0002-eval-do-quickstart-revelou-roteamento-e-recuperacao.md): o roteador respondendo sozinho em vez de delegar, embeddings em inglês, produto descontinuado invisível ao agente, filtro de categoria que não tolerava "violao" e um tool de pedidos que não devolvia a quantidade (o modelo inventou "7 unidades"). Todas foram corrigidas com teste. A lição prática: testes unitários não substituem avaliar o agente de ponta a ponta.
+A primeira execução da bateria, com todos os testes unitários verdes, falhou em 11 de 36 casos. As causas, registradas em [LL-0002](docs/learning-lessons/0002-eval-do-quickstart-revelou-roteamento-e-recuperacao.md): o roteador respondendo sozinho em vez de delegar, embeddings em inglês, produto descontinuado invisível ao agente, filtro de categoria que não tolerava "violao" e itens de pedido com quantidade errada ("7 unidades" num pedido de 1). Todas foram corrigidas com teste. Esta última teve o diagnóstico corrigido na validação final: a causa não era o modelo, e sim a ingestão duplicando `order_items` a cada start do app. A lição prática: testes unitários não substituem avaliar o agente de ponta a ponta.
 
 ## Limitações conhecidas
 

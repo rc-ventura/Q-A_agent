@@ -12,6 +12,9 @@ Decisões arquiteturais materiais do projeto, registradas na mesma entrega que a
 | [0003](./0003-right-sizing-harness.md) | Right-sizing do harness: create_agent em vez de deepagents | Aceito | 2026-11-04 |
 | [0004](./0004-arquitetura-dispatcher.md) | Arquitetura dispatcher: roteador + especialistas por dominio | Aceito | 2026-11-04 |
 | [0005](./0005-embeddings-openai-no-indice-de-politicas.md) | Embeddings OpenAI (text-embedding-3-small) no indice de politicas | Aceito | 2026-11-05 |
+| [0006](./0006-chave-openai-pela-ui-gravada-no-env.md) | Chave da OpenAI configurada pela UI e gravada no .env local | Aceito | 2026-11-05 |
+| [0007](./0007-dados-de-runtime-reconstruidos-a-cada-start.md) | Dados de runtime derivados das fontes e reconstruidos a cada start | Aceito | 2026-11-05 |
+| [0008](./0008-bateria-de-eval-com-llm-real-como-aceite.md) | Bateria de eval contra o agente real como criterio de aceite | Aceito | 2026-11-05 |
 
 ## Formato
 
