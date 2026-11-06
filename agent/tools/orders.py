@@ -7,6 +7,24 @@ from langchain_core.tools import tool
 from agent.tools.db import open_readonly
 
 
+STATUS_PT = {
+    "pending": "aguardando pagamento",
+    "confirmed": "confirmado",
+    "shipped": "enviado",
+    "delivered": "entregue",
+    "cancelled": "cancelado",
+}
+
+PAYMENT_PT = {"pix": "PIX", "boleto": "boleto", "debit": "cartão de débito"}
+
+
+def _payment_pt(code: str | None) -> str | None:
+    """Traduz o codigo interno de pagamento (ex.: credit_12x) para o cliente."""
+    if code and code.startswith("credit_"):
+        return f"cartão de crédito em {code.removeprefix('credit_')}"
+    return PAYMENT_PT.get(code, code)
+
+
 def _norm(text: str | None) -> str:
     """Minusculas sem acentos para match tolerante de nome."""
     return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
@@ -55,8 +73,10 @@ def make_orders_tools(db_path: str) -> list:
     def list_customer_orders(customer_id: int) -> str:
         """Lista os pedidos de um cliente já identificado por find_customer.
 
-        Cada pedido traz order_id, status, order_date, total_brl,
-        payment_method e items ([{name, quantity}] com nome e quantidade de cada produto). tracking_code e
+        Cada pedido traz order_id, status (já em português: aguardando
+        pagamento, confirmado, enviado, entregue, cancelado), order_date,
+        total_brl, payment_method (já em português, ex.: "cartão de crédito
+        em 12x") e items ([{name, quantity}] com nome e quantidade de cada produto). tracking_code e
         estimated_delivery aparecem só quando existem; cancelled traz o
         motivo em notes quando houver. Retorna {"orders": [...]}.
         """
@@ -88,10 +108,10 @@ def make_orders_tools(db_path: str) -> list:
         for o in orders:
             entry = {
                 "order_id": o["order_id"],
-                "status": o["status"],
+                "status": STATUS_PT.get(o["status"], o["status"]),
                 "order_date": o["order_date"],
                 "total_brl": o["total_brl"],
-                "payment_method": o["payment_method"],
+                "payment_method": _payment_pt(o["payment_method"]),
                 "items": items_by_order.get(o["order_id"], []),
             }
             if o["tracking_code"]:

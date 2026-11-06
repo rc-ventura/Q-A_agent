@@ -25,8 +25,12 @@ def ingest_all(source_dir: Path, conn: sqlite3.Connection) -> dict[str, int]:
 
     Le na ordem de dependencia FK (categorias → produtos → pedidos), aplica
     coercao de tipos (is_active 0/1 → bool) e devolve contagens por tabela.
+    Idempotente: os CSVs sao a fonte da verdade, entao cada execucao esvazia
+    as tabelas antes de recarregar (order_items nao tem PK e duplicaria).
     """
     init_schema(conn)
+    for table, _, _ in reversed(list(_INSERTS.values())):
+        conn.execute(f"DELETE FROM {table}")
     counts: dict[str, int] = {}
     for name, (table, model, cols) in _INSERTS.items():
         with open(source_dir / f"{name}.csv", newline="", encoding="utf-8") as fh:
@@ -34,8 +38,6 @@ def ingest_all(source_dir: Path, conn: sqlite3.Connection) -> dict[str, int]:
         for r in rows:
             if table == "promotions":
                 r["is_active"] = int(bool(r["is_active"]))
-            elif table == "orders" and "total_brl" in r:
-                r["total_brl"] = r["total_brl"]
         conn.executemany(
             f"INSERT OR REPLACE INTO {table} ({','.join(cols)})"
             f" VALUES ({','.join('?' for _ in cols)})",

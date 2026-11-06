@@ -63,3 +63,15 @@ def test_stock_constraint(conn):
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute("INSERT INTO products(product_id,name,price_brl,stock_quantity,status)"
                      " VALUES (999999,'x',-1,0,'active')")
+
+
+def test_reingest_is_idempotent():
+    """O app reingere a cada start: order_items (sem PK) nao pode duplicar."""
+    s = Settings()
+    c = sqlite3.connect(":memory:")
+    first = ingest_all(s.source_dir, c)
+    ingest_all(s.source_dir, c)
+    ingest_all(s.source_dir, c)
+    for table, expected in first.items():
+        assert c.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == expected, table
+    c.close()

@@ -29,8 +29,15 @@ O diagnóstico exigiu rastrear o que cada camada fazia, e não só ler a respost
    por caso (10/10 nos quatro casos de fronteira).
 6. **Exemplos de conversa também são teste.** Ao capturar as conversas de exemplo do agente real e conferir
    cada fato contra os dados, apareceram três defeitos que a bateria não cobria: pedido de telefone para
-   identificar o cliente, "7 unidades" inventadas (o tool não devolvia a quantidade) e oferta de acessórios.
-   Cada um virou teste.
+   identificar o cliente, "7 unidades" num pedido de 1 unidade e oferta de acessórios. Cada um virou teste.
+7. **Diagnóstico errado no item 6, achado na validação final.** As "7 unidades" foram atribuídas ao
+   modelo inventando a quantidade, e a correção foi expor `quantity` no tool. Na validação contra a spec,
+   um caso novo mostrou "11 unidades" para outro pedido de 1 unidade, já com o campo exposto. A causa
+   real estava na ingestão: `order_items` não tem chave primária, o `INSERT OR REPLACE` só acrescenta, e
+   o boot (T040) reingere a cada start. O banco local tinha cada item 11 vezes; o modelo somava as linhas
+   repetidas. As "7 unidades" eram, muito provavelmente, a mesma duplicação com 7 starts. A ingestão agora
+   esvazia as tabelas antes de recarregar, com teste de reingestão tripla. O mesmo caso mostrou o status
+   cru `"shipped"` para o cliente; o tool passou a devolver status e forma de pagamento em português.
 
 ## Inconsistências nas fontes (não corrigidas, registradas)
 
@@ -54,3 +61,6 @@ O diagnóstico exigiu rastrear o que cada camada fazia, e não só ler a respost
   de fronteira ~10 vezes antes de aceitar. Uma única rodada verde esconde a variância do modelo.
 - Quando o modelo inventa um dado, perguntar primeiro se o tool o entregou. Expor o campo no tool vale mais
   do que mais uma frase de "não invente" no prompt.
+- Antes de culpar o modelo, olhar o dado que ele recebeu no banco real, não só no banco do teste. Os
+  testes unitários ingeriam uma vez em banco novo e nunca veriam a duplicação: testar a operação como
+  ela roda em produção (aqui, reingestão repetida).

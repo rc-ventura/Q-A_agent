@@ -6,7 +6,7 @@ from tests.eval.support import assert_reply, price, requires_real_key
 
 pytestmark = [pytest.mark.eval, requires_real_key]
 
-UNAVAILABLE = ("esgot", "indispon", "sem estoque", "fora de estoque", "não temos", "não há")
+UNAVAILABLE = ("esgot", "indispon", "não está disponível", "sem estoque", "fora de estoque", "não temos", "não há")
 NOT_IN_FORCE = ("não está", "não há", "não temos", "encerrad", "expirad", "venc", "não é mais", "não estão")
 
 CATALOG_CASES = [
@@ -145,3 +145,47 @@ def test_vague_request_resolved_within_two_exchanges(agent):
     agent.ask("Quero um violão para meu filho iniciante", thread)
     reply = agent.ask("Meu orçamento é até R$ 500", thread)
     assert_reply(reply, required=[(price(429.9)[0], price(459.9)[0])])
+
+
+def test_out_of_stock_suggests_in_stock_alternatives(agent):
+    reply = agent.ask("O violão Giannini GF-3D está disponível? Se não, o que tem parecido?")
+    assert_reply(reply, required=[UNAVAILABLE, "r$"], forbidden=["giannini gf-3d está disponível"])
+
+
+def test_pix_discount_not_stacked_on_promotion(agent):
+    reply = agent.ask("Se eu comprar o ukulele Kalani KAL-700T no PIX, ganho mais 5% em cima da promoção?")
+    assert_reply(
+        reply,
+        required=[price(323.1), ("cumulativ", "acumul", "não se aplica", "não incide", "não vale", "não é possível", "não pode")],
+        forbidden=["306,9", "306.9"],
+    )
+
+
+def test_shipped_order_shows_tracking_and_eta(agent):
+    reply = agent.ask("Sou Ana Carolina Ferreira, qual o status do meu pedido?")
+    assert_reply(
+        reply,
+        required=["brjl5544332br", ("enviad", "caminho", "transporte", "despachad"), ("28/02", "28 de fevereiro", "2026-02-28")],
+    )
+
+
+def test_customer_without_orders(agent):
+    reply = agent.ask("Sou Rodrigo Silva, rodrigo.silva@jmail.com. Cadê meu pedido?")
+    assert_reply(
+        reply,
+        required=[("nenhum pedido", "não encontr", "não localizei", "não há pedido", "não possui", "não tem pedido")],
+        forbidden=["brab1234567br", "brjl5544332br", "entregue"],
+    )
+
+
+def test_partial_product_name_is_resolved(agent):
+    reply = agent.ask("Quanto custa o Taylor 214?")
+    assert_reply(reply, required=[price(7499.0)])
+
+
+def test_shipping_quote_not_in_sources_is_not_invented(agent):
+    reply = agent.ask("Quanto fica o frete de uma bateria acústica para Manaus?")
+    assert_reply(
+        reply,
+        required=["cep", ("3341-4444", "whatsapp", "equipe", "atendimento", "contato")],
+    )

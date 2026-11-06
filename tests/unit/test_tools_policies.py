@@ -58,3 +58,27 @@ def test_get_store_info_fixed_block(tools):
     assert res["telefone_whatsapp"] == "(67) 3341-4444"
     assert res["horario"]["segunda_a_sexta"] == "09:00 às 18:00"
     assert res["horario"]["sabado"] == "09:00 às 13:00"
+
+
+def test_search_recovers_after_index_rebuild(tmp_path, monkeypatch):
+    """Reindexar (boot, nova chave) recria a collection; o handle em cache nao pode ficar morto."""
+    from agent import policies_rag
+    from agent.tools import policies as policies_tools
+
+    ef = DefaultEmbeddingFunction()
+    settings = Settings()
+    settings.__dict__["chroma_dir"] = tmp_path
+    index_policies(settings, persist_dir=str(tmp_path), embedding_function=ef)
+    monkeypatch.setattr(
+        policies_tools,
+        "open_policies",
+        lambda s: policies_rag._client(str(tmp_path)).get_collection(
+            policies_rag.COLLECTION_NAME, embedding_function=ef
+        ),
+    )
+    search = {t.name: t for t in make_policies_tools(settings)}["search_policies"]
+    assert "chunks" in _run(search, question="posso devolver porque me arrependi")
+
+    index_policies(settings, persist_dir=str(tmp_path), embedding_function=ef)
+
+    assert "chunks" in _run(search, question="posso devolver porque me arrependi")

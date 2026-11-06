@@ -59,9 +59,14 @@ def build_ui(has_valid_key: bool, settings: Settings | None = None) -> gr.Blocks
         with gr.Column(visible=has_valid_key) as chat_area:
             thread = gr.State(new_thread_id)
             chatbot = gr.Chatbot(height=520)
-            gr.ChatInterface(respond, additional_inputs=[thread], chatbot=chatbot)
+            chat = gr.ChatInterface(respond, additional_inputs=[thread], chatbot=chatbot)
             new_chat = gr.Button("Nova conversa")
-            new_chat.click(lambda: (new_thread_id(), []), outputs=[thread, chatbot])
+            # chatbot_state e a copia interna do historico do ChatInterface: sem zera-la,
+            # a conversa anterior reaparece na tela na proxima mensagem.
+            new_chat.click(
+                lambda: (new_thread_id(), [], []),
+                outputs=[thread, chatbot, chat.chatbot_state],
+            )
             chatbot.clear(new_thread_id, outputs=[thread])
 
         def submit_key(key: str):

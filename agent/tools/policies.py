@@ -1,6 +1,7 @@
 import json
 import threading
 
+from chromadb.errors import NotFoundError
 from langchain_core.tools import tool
 
 from agent.policies_rag import open_policies, search_policies as _rag_search
@@ -11,10 +12,11 @@ _collection_cache: dict[str, object] = {}
 _collection_lock = threading.Lock()
 
 
-def _collection(settings: Settings):
+def _collection(settings: Settings, refresh: bool = False):
+    """Collection do manual em cache por diretorio; ``refresh`` reabre apos reindexacao."""
     key = str(settings.chroma_dir)
     with _collection_lock:
-        if key not in _collection_cache:
+        if refresh or key not in _collection_cache:
             _collection_cache[key] = open_policies(settings)
         return _collection_cache[key]
 
@@ -40,12 +42,13 @@ def make_policies_tools(settings: Settings, collection=None, min_score: float | 
         SOMENTE nesses trechos. Se vier {"retrieval": "weak"}, a informação
         não consta no manual: declare o limite e ofereça o canal humano.
         """
-        hits = _rag_search(
-            collection or _collection(settings),
-            question,
-            score,
-            limit=top_k,
-        )
+        try:
+            hits = _rag_search(collection or _collection(settings), question, score, limit=top_k)
+        except NotFoundError:
+            # index_policies recria a collection (boot, nova chave): o handle em cache morreu
+            if collection is not None:
+                raise
+            hits = _rag_search(_collection(settings, refresh=True), question, score, limit=top_k)
         if not hits:
             return json.dumps({"retrieval": "weak"})
         return json.dumps(
