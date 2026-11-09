@@ -5,9 +5,11 @@ from collections.abc import AsyncIterator
 import openai
 from langchain_core.messages import AIMessageChunk, ToolMessage
 
+from agent.contact import HUMAN_PHONE
+
 logger = logging.getLogger(__name__)
 
-HUMAN_CONTACT = "WhatsApp (67) 3341-4444"
+HUMAN_CONTACT = f"WhatsApp {HUMAN_PHONE}"
 
 TOOL_TITLES = {
     "specialist_catalog": "Consultando catálogo…",
@@ -83,6 +85,7 @@ async def stream_reply(graph, message: str, thread_id: str) -> AsyncIterator[lis
         falha, a lista termina com a mensagem amigavel de ``friendly_error``.
     """
     messages: list[dict] = []
+    blocks: dict[str, dict] = {}
     try:
         async for chunk, _metadata in graph.astream(
             {"messages": [("user", message)]},
@@ -91,19 +94,24 @@ async def stream_reply(graph, message: str, thread_id: str) -> AsyncIterator[lis
         ):
             changed = False
             if isinstance(chunk, ToolMessage):
-                _finish_tool_blocks(messages)
+                block = blocks.get(chunk.tool_call_id)
+                if block is not None:
+                    block["metadata"]["status"] = "done"
+                else:
+                    _finish_tool_blocks(messages)
                 changed = True
             elif isinstance(chunk, AIMessageChunk):
                 for call in chunk.tool_calls:
                     if call["name"]:
                         title = TOOL_TITLES.get(call["name"], "Consultando…")
-                        messages.append(
-                            {
-                                "role": "assistant",
-                                "content": "",
-                                "metadata": {"title": title, "status": "pending"},
-                            }
-                        )
+                        block = {
+                            "role": "assistant",
+                            "content": "",
+                            "metadata": {"title": title, "status": "pending"},
+                        }
+                        messages.append(block)
+                        if call.get("id"):
+                            blocks[call["id"]] = block
                         changed = True
                 if chunk.content:
                     _append_text(messages, chunk.content)

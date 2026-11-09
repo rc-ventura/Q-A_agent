@@ -37,6 +37,10 @@ def check_api_key(key: str, client_factory: Callable[[str], OpenAI] = _default_c
         client_factory(key).models.list()
     except openai.AuthenticationError:
         return INVALID_KEY_MESSAGE
+    except openai.PermissionDeniedError:
+        # Chave restrita sem o escopo de listar modelos (403): e valida para o chat.
+        logger.warning("chave sem permissao de listar modelos; aceita mesmo assim")
+        return None
     except Exception as exc:
         logger.error("validacao da chave nao concluida: %s", type(exc).__name__)
         return "Não foi possível validar a chave agora (sem conexão ou serviço indisponível). Tente novamente."

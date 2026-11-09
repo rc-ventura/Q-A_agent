@@ -9,6 +9,7 @@ app rodando ao mesmo tempo (uma rodada concorrente anterior foi descartada por c
 | `2026-11-06-round-2.txt` | idem, com ajuste de prompt de pedidos e asserção ampliada | 41/43 em 4 min 01 s | `golden7-black-friday-inativa`, `golden8_mixed_price_and_installments` |
 | `2026-11-06-round-3.txt` | temperatura 0 | 43/43 em 4 min 08 s | nenhuma |
 | `2026-11-06-round-4.txt` | temperatura 0 | 43/43 em 3 min 46 s | nenhuma |
+| `2026-11-06-round-5.txt` | temperatura 0, depois dos ajustes da revisão `/code-review` (índice RAG atômico, view de promoções, chunker, UI); textos dos prompts e chunks do manual idênticos aos da rodada 4 | 43/43 em 4 min 26 s | nenhuma |
 
 ## Medições isoladas (10 execuções por caso, saída apenas no terminal da sessão; não há arquivo)
 
@@ -20,4 +21,4 @@ Resultados que o README cita, anotados aqui na ordem em que foram medidos:
   execução isolada, após falharem uma vez na bateria completa.
 - PIX sobre promoção com temperatura 0: 20/20 (com a temperatura padrão, 14/18 numa medição anterior).
 
-Essas medições isoladas não têm arquivo de saída e são atestadas pelo autor; as quatro rodadas completas acima têm.
+Essas medições isoladas não têm arquivo de saída e são atestadas pelo autor; as cinco rodadas completas acima têm.

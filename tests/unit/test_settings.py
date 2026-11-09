@@ -115,3 +115,31 @@ def test_temperature_must_be_between_0_and_2(monkeypatch):
         monkeypatch.setenv("OPENAI_TEMPERATURE", bad)
         with pytest.raises(ValidationError):
             Settings()
+
+
+def test_save_api_key_failure_keeps_previous_env_intact(monkeypatch, tmp_path):
+    """Falha no meio da gravacao nao pode truncar o .env (modelo, temperatura e demais ajustes)."""
+    monkeypatch.setenv("OPENAI_API_KEY", "antiga")
+    env = tmp_path / ".env"
+    env.write_text("OPENAI_MODEL=gpt-4o\nOPENAI_API_KEY=velha\n")
+
+    def boom(fd):
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr(os, "fsync", boom)
+    with pytest.raises(OSError):
+        save_api_key("sk-nova", env_path=env)
+    assert env.read_text() == "OPENAI_MODEL=gpt-4o\nOPENAI_API_KEY=velha\n"
+    assert os.environ["OPENAI_API_KEY"] == "antiga"
+    assert [p.name for p in tmp_path.iterdir()] == [".env"]
+
+
+def test_save_api_key_keeps_symlinked_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENAI_API_KEY", "antiga")
+    real = tmp_path / "real.env"
+    real.write_text("OPENAI_MODEL=gpt-4o\n")
+    link = tmp_path / ".env"
+    link.symlink_to(real)
+    save_api_key("sk-nova", env_path=link)
+    assert link.is_symlink()
+    assert real.read_text() == "OPENAI_MODEL=gpt-4o\nOPENAI_API_KEY=sk-nova\n"

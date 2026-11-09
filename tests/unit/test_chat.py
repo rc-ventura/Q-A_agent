@@ -131,3 +131,23 @@ def test_friendly_error_generic_includes_human_contact():
     message = friendly_error(ValueError("qualquer coisa interna"))
     assert "(67) 3341-4444" in message
     assert "qualquer coisa interna" not in message
+
+
+def call(name, call_id):
+    return AIMessageChunk(
+        content="", tool_calls=[{"name": name, "args": {}, "id": call_id, "type": "tool_call"}]
+    )
+
+
+def test_parallel_tool_calls_finish_only_the_block_whose_result_arrived():
+    events = [
+        call("specialist_catalog", "c1"),
+        call("specialist_policies", "c2"),
+        ToolMessage(content="dados", tool_call_id="c1"),
+    ]
+    snapshots = collect(FakeGraph(events))
+    statuses = {m["metadata"]["title"]: m["metadata"]["status"] for m in snapshots[-1]}
+    assert statuses == {"Consultando catálogo…": "done", "Consultando políticas…": "pending"}
+    events.append(ToolMessage(content="dados", tool_call_id="c2"))
+    final = collect(FakeGraph(events))[-1]
+    assert all(m["metadata"]["status"] == "done" for m in final)

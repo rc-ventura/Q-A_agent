@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS categories(
@@ -31,27 +32,29 @@ CREATE INDEX IF NOT EXISTS idx_promos_product ON promotions(product_id);
 def init_schema(conn: sqlite3.Connection) -> None:
     """Cria o schema SQLite (idempotente) com constraints de integridade."""
     conn.executescript(SCHEMA)
-    conn.executescript(ACTIVE_PROMOTIONS_VIEW)
+    # Recria a view: um store.db de versao anterior manteria a definicao antiga (IF NOT EXISTS).
+    conn.executescript("DROP VIEW IF EXISTS v_active_promotions;" + ACTIVE_PROMOTIONS_VIEW)
 
 
 def connect_readonly(path) -> sqlite3.Connection:
     """Abre conexao read-only (tools nunca escrevem no operacional)."""
-    conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    # as_uri() codifica '?', '#' e '%' do caminho (um checkout em "proj#2" quebraria a URI crua)
+    conn = sqlite3.connect(f"{Path(path).resolve().as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
 
 
+# Uma linha por produto: a promocao ativa de maior desconto (empate: menor promotion_id).
 ACTIVE_PROMOTIONS_VIEW = """
-CREATE VIEW IF NOT EXISTS v_active_promotions AS
+CREATE VIEW v_active_promotions AS
 SELECT p.product_id, p.name, p.price_brl, pr.discount_percent,
        round(p.price_brl * (1 - pr.discount_percent / 100.0), 2) AS final_price_brl,
        pr.description AS promotion_description
 FROM products p
 JOIN promotions pr ON pr.product_id = p.product_id
-WHERE pr.is_active = 1;
+WHERE pr.is_active = 1
+  AND pr.promotion_id = (
+    SELECT x.promotion_id FROM promotions x
+    WHERE x.product_id = p.product_id AND x.is_active = 1
+    ORDER BY x.discount_percent DESC, x.promotion_id LIMIT 1);
 """
-
-
-def create_views(conn: sqlite3.Connection) -> None:
-    """Cria a view de promocoes ativas (preco final calculado no SQL)."""
-    conn.executescript(ACTIVE_PROMOTIONS_VIEW)

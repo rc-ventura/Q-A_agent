@@ -148,3 +148,67 @@ def test_open_policies_builds_index_when_missing(tmp_path):
         Settings(), persist_dir=str(tmp_path), embedding_function=DefaultEmbeddingFunction()
     )
     assert opened.count() >= 10
+
+
+def test_chunk_text_early_paragraph_break_does_not_emit_shrinking_chunks():
+    """Quebra de paragrafo logo no inicio da janela nao pode gerar chunks redundantes."""
+    text = "a" * 20 + "\n\n" + "b" * 3000
+    chunks = chunk_text(text)
+    assert len(chunks) <= 4
+    assert all(len(c) > 150 for c in chunks[:-1])
+    assert "b" * 100 in chunks[1] or "b" * 100 in chunks[0]
+
+
+def test_chunk_text_covers_all_content():
+    text = "\n\n".join(f"par{i:03d} " + "x" * 90 for i in range(60))
+    joined = "".join(chunk_text(text, chunk_chars=500, overlap=50))
+    for i in range(60):
+        assert f"par{i:03d}" in joined
+
+
+class _FailingEmbedding(chromadb.EmbeddingFunction):
+    def __init__(self):
+        pass
+
+    def __call__(self, input):
+        raise RuntimeError("sem rede")
+
+    @staticmethod
+    def name():
+        return "failing-test"
+
+    def get_config(self):
+        return {}
+
+    @staticmethod
+    def build_from_config(config):
+        return _FailingEmbedding()
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_failed_reindex_keeps_previous_index(tmp_path):
+    """Falha de embedding na reindexacao nao pode deixar o indice vazio."""
+    local = DefaultEmbeddingFunction()
+    good = index_policies(Settings(), persist_dir=str(tmp_path), embedding_function=local)
+    n = good.count()
+    assert n >= 10
+    with pytest.raises(Exception):
+        index_policies(Settings(), persist_dir=str(tmp_path), embedding_function=_FailingEmbedding())
+    reopened = open_policies(Settings(), persist_dir=str(tmp_path), embedding_function=local)
+    assert reopened.count() == n
+    names = [c.name for c in chromadb.PersistentClient(
+        path=str(tmp_path), settings=ChromaSettings(anonymized_telemetry=False, allow_reset=True)
+    ).list_collections()]
+    assert names == ["policies"]
+
+
+@pytest.mark.skipif(not PDF.exists(), reason="pdf fonte ausente")
+def test_open_policies_rebuilds_an_empty_index(tmp_path):
+    client = chromadb.PersistentClient(
+        path=str(tmp_path), settings=ChromaSettings(anonymized_telemetry=False, allow_reset=True)
+    )
+    client.create_collection("policies")
+    opened = open_policies(
+        Settings(), persist_dir=str(tmp_path), embedding_function=DefaultEmbeddingFunction()
+    )
+    assert opened.count() >= 10

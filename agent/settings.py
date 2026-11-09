@@ -79,10 +79,19 @@ def save_api_key(key: str, env_path: Path | None = None) -> None:
         lines = [entry if _KEY_LINE.match(line) else line for line in lines]
     else:
         lines.append(entry)
-    # Cria com 0600 desde o primeiro byte (write_text + chmod deixaria uma janela legivel
-    # por outros usuarios) e restringe tambem um arquivo preexistente mais permissivo.
-    fd = os.open(env_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
-    env_path.chmod(0o600)
+    # Grava num arquivo temporario 0600 (criado ja privado, sem janela legivel por outros)
+    # e o troca pelo .env com os.replace: uma falha no meio nao trunca o .env existente.
+    # Um .env que e link simbolico e atualizado no destino, preservando o link.
+    target = Path(os.path.realpath(env_path))
+    tmp = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, target)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
     os.environ["OPENAI_API_KEY"] = key

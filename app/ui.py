@@ -4,7 +4,7 @@ import uuid
 import gradio as gr
 
 from app.bootstrap import activate_key, check_api_key, ensure_data, startup_key_state
-from app.chat import stream_reply
+from app.chat import friendly_error, stream_reply
 from agent.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,18 @@ async def respond(message: str, history: list, thread_id: str):
     """
     from agent.graph import local_agent
 
-    async with local_agent() as graph:
-        async for snapshot in stream_reply(graph, message, thread_id):
-            yield snapshot
+    produced = False
+    try:
+        async with local_agent() as graph:
+            async for snapshot in stream_reply(graph, message, thread_id):
+                produced = True
+                yield snapshot
+    except Exception as exc:
+        # Falhas de montagem (chave ausente, checkpoints.db sem permissao) acontecem fora do
+        # stream_reply; sem isto o cliente veria o erro generico do Gradio.
+        logger.error("falha ao preparar o atendimento: %s", type(exc).__name__)
+        if not produced:
+            yield [{"role": "assistant", "content": friendly_error(exc)}]
 
 
 def handle_key_submission(key: str, settings: Settings):

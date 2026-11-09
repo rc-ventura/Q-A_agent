@@ -4,7 +4,7 @@ import unicodedata
 
 from langchain_core.tools import tool
 
-from agent.tools.db import open_readonly
+from agent.db import connect_readonly
 
 
 MIN_NAME_LENGTH = 3
@@ -33,11 +33,6 @@ def _norm(text: str | None) -> str:
     return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
 
 
-def _open(db_path):
-    """Abre a base read-only; ausente degrada com erro explicito."""
-    return open_readonly(db_path)
-
-
 def make_orders_tools(db_path: str) -> list:
     """Tools de pedidos fechados sobre o SQLite operacional (read-only)."""
 
@@ -62,7 +57,7 @@ def make_orders_tools(db_path: str) -> list:
                 return json.dumps({"error": "name_too_short"})
             q_name = ""
         try:
-            conn = _open(db_path)
+            conn = connect_readonly(db_path)
         except sqlite3.Error:
             return json.dumps({"error": "store_unavailable"})
         try:
@@ -94,7 +89,7 @@ def make_orders_tools(db_path: str) -> list:
         motivo em notes quando houver. Retorna {"orders": [...]}.
         """
         try:
-            conn = _open(db_path)
+            conn = connect_readonly(db_path)
         except sqlite3.Error:
             return json.dumps({"error": "store_unavailable"})
         try:

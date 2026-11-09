@@ -108,3 +108,27 @@ def test_launch_enters_chat_when_key_unverified_by_network(monkeypatch):
     monkeypatch.setattr(ui, "build_ui", fake_build)
     ui.launch()
     assert seen["has_key"] is True and seen["launched"] is True
+
+
+def test_respond_setup_failure_becomes_friendly_message(monkeypatch):
+    """Falha ao montar o agente (chave ausente, banco sem permissao) nao pode virar erro cru do Gradio."""
+    import asyncio
+    from contextlib import asynccontextmanager
+
+    import agent.graph as graph_module
+    from app.ui import respond
+
+    @asynccontextmanager
+    async def broken_local_agent():
+        raise PermissionError("/data/runtime/checkpoints.db sk-vazou")
+        yield
+
+    monkeypatch.setattr(graph_module, "local_agent", broken_local_agent)
+
+    async def run():
+        return [s async for s in respond("oi", [], "t-ui")]
+
+    snapshots = asyncio.run(run())
+    final = snapshots[-1]
+    assert "(67) 3341-4444" in final[-1]["content"]
+    assert "sk-vazou" not in str(final)

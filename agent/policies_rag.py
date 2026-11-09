@@ -10,6 +10,7 @@ from pypdf import PdfReader
 SECTION_RE = re.compile(r"^(\d{1,2}(?:\.\d{1,2})?)(?:\. | )(\S.*)$")
 NOISE_RE = re.compile(r"^\s*(Página \d+|Empório da Música Manual de Políticas.*)$")
 COLLECTION_NAME = "policies"
+STAGING_NAME = "policies_staging"
 EMBEDDING_MODEL = "text-embedding-3-small"
 MAX_CHUNK_CHARS = 1200
 OVERLAP = 150
@@ -18,7 +19,9 @@ OVERLAP = 150
 def chunk_text(text: str, chunk_chars: int = MAX_CHUNK_CHARS, overlap: int = OVERLAP) -> list[str]:
     """Divide texto em janelas sobrepostas, preferindo cortes em paragrafo.
 
-    Garante que nenhum chunk exceda chunk_chars + overlap caracteres.
+    Garante que nenhum chunk exceda chunk_chars + overlap caracteres. O corte em
+    paragrafo so e usado quando deixa um chunk maior que o overlap; senao a janela
+    avancaria quase nada por vez e geraria chunks minusculos e redundantes.
     """
     if not text:
         return []
@@ -28,7 +31,7 @@ def chunk_text(text: str, chunk_chars: int = MAX_CHUNK_CHARS, overlap: int = OVE
         end = min(start + chunk_chars, len(text))
         if end < len(text):
             cut = text.rfind("\n\n", start, end + overlap)
-            if cut > start:
+            if cut > start + overlap:
                 end = cut
         piece = text[start:end].strip()
         if piece:
@@ -124,28 +127,40 @@ def build_collection(sections: list[dict], persist_dir: str, embedding_function)
         A collection ``policies`` populada.
     """
     client = _client(persist_dir)
+    # Constroi numa colecao temporaria e so troca pela definitiva depois que os
+    # embeddings deram certo: uma falha (sem rede, 401, limite) nao pode deixar o
+    # indice vazio nem apagar o indice anterior.
+    try:
+        client.delete_collection(STAGING_NAME)
+    except NotFoundError:
+        pass
+    staging = client.create_collection(
+        STAGING_NAME,
+        embedding_function=embedding_function,
+        configuration={"hnsw": {"space": "cosine"}},
+    )
+    try:
+        chunks = [c for s in sections for c in section_chunks(s)]
+        if chunks:
+            staging.upsert(
+                ids=[c["id"] for c in chunks],
+                documents=[
+                    f"Secao {c['section_no']} — {c['section_title']}\n\n{c['text']}"
+                    for c in chunks
+                ],
+                metadatas=[
+                    {k: c[k] for k in ("section_no", "section_title", "page")} for c in chunks
+                ],
+            )
+    except BaseException:
+        client.delete_collection(STAGING_NAME)
+        raise
     try:
         client.delete_collection(COLLECTION_NAME)
     except NotFoundError:
         pass
-    coll = client.create_collection(
-        COLLECTION_NAME,
-        embedding_function=embedding_function,
-        configuration={"hnsw": {"space": "cosine"}},
-    )
-    chunks = [c for s in sections for c in section_chunks(s)]
-    if chunks:
-        coll.upsert(
-            ids=[c["id"] for c in chunks],
-            documents=[
-                f"Secao {c['section_no']} — {c['section_title']}\n\n{c['text']}"
-                for c in chunks
-            ],
-            metadatas=[
-                {k: c[k] for k in ("section_no", "section_title", "page")} for c in chunks
-            ],
-        )
-    return coll
+    staging.modify(name=COLLECTION_NAME)
+    return staging
 
 
 def index_policies(settings, persist_dir: str | None = None, embedding_function=None):
@@ -183,9 +198,13 @@ def open_policies(settings, persist_dir: str | None = None, embedding_function=N
     directory = persist_dir or str(settings.chroma_dir)
     embedding_function = embedding_function or openai_embedding_function()
     try:
-        return _client(directory).get_collection(COLLECTION_NAME, embedding_function=embedding_function)
+        coll = _client(directory).get_collection(COLLECTION_NAME, embedding_function=embedding_function)
     except NotFoundError:
+        coll = None
+    if coll is None or coll.count() == 0:
+        # Indice ausente ou vazio (ex.: partida anterior interrompida): reconstroi.
         return index_policies(settings, persist_dir=directory, embedding_function=embedding_function)
+    return coll
 
 
 def search_policies(coll, query: str, min_score: float, limit: int = 3) -> list[dict]:

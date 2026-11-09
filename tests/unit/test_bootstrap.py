@@ -126,3 +126,11 @@ def test_startup_key_state_network_failure_is_not_rejection():
 
     state = startup_key_state("sk-ok", check=lambda k: "Não foi possível validar a chave agora")
     assert state == "unverified"
+
+
+def test_check_api_key_without_models_scope_is_accepted():
+    """Chave restrita (sem models.read) recebe 403 na listagem, mas continua valida para o chat."""
+    error = openai.PermissionDeniedError(
+        "sem escopo", response=httpx.Response(403, request=request()), body=None
+    )
+    assert check_api_key("sk-restrita", client_factory=lambda k: FakeClient(error)) is None

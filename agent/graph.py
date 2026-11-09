@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from agent import specialists
+from agent.contact import HUMAN_PHONE
 from agent.prompt import DISPATCHER_SYSTEM_PROMPT
 from agent.llm import build_model
 from agent.settings import Settings, get_settings
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 SPECIALIST_FAILURE_MESSAGE = (
     "Não consegui consultar essa informação agora. Peça ao cliente para tentar de novo "
-    "ou indique o atendimento humano pelo WhatsApp (67) 3341-4444."
+    f"ou indique o atendimento humano pelo WhatsApp {HUMAN_PHONE}."
 )
 
 _SPECIALIST_SPECS = [

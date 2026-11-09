@@ -3,7 +3,6 @@ import sqlite3
 import pytest
 
 from agent.ingest import ingest_all
-from agent.pricing import effective_price_brl, max_active_discount
 from agent.settings import Settings
 
 
@@ -38,15 +37,14 @@ def test_fk_integrity(conn):
 
 
 def test_promotion_logic(conn):
-    assert effective_price_brl(100.0, 10) == 90.0
-    active = max_active_discount(conn)
-    assert isinstance(active, dict)
-    assert all(0 <= d <= 100 for d in active.values())
-    row = conn.execute(
-        "SELECT product_id FROM promotions WHERE is_active=1 LIMIT 1"
-    ).fetchone()
-    if row:
-        assert row[0] in active
+    active = conn.execute(
+        "SELECT product_id, price_brl, discount_percent, final_price_brl FROM v_active_promotions"
+    ).fetchall()
+    assert active
+    assert len({r[0] for r in active}) == len(active), "uma promocao por produto"
+    for _, price, disc, final in active:
+        assert 0 <= disc <= 100
+        assert final == round(price * (1 - disc / 100), 2)
 
 
 def test_orders_join(conn):

@@ -5,7 +5,7 @@ import unicodedata
 
 from langchain_core.tools import tool
 
-from agent.tools.db import open_readonly
+from agent.db import connect_readonly
 
 MAX_LIMIT = 10
 
@@ -84,7 +84,7 @@ def make_catalog_tools(db_path: str) -> list:
         onde campaign é o nome da campanha ativa (ex.: "Oferta Especial").
         """
         try:
-            conn = open_readonly(db_path)
+            conn = connect_readonly(db_path)
         except sqlite3.Error:
             return json.dumps({"error": "store_unavailable"})
         try:
@@ -134,7 +134,7 @@ def make_catalog_tools(db_path: str) -> list:
         {"error": "not_found", "did_you_mean": [nomes próximos]}.
         """
         try:
-            conn = open_readonly(db_path)
+            conn = connect_readonly(db_path)
         except sqlite3.Error:
             return json.dumps({"error": "store_unavailable"})
         try:

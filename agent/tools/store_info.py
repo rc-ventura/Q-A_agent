@@ -1,8 +1,10 @@
+from agent.contact import HUMAN_PHONE
+
 STORE_INFO = {
     "nome": "Empório da Música",
     "razao_social": "Empório da Música Instrumentos Musicais Ltda.",
     "endereco": "Rua 14 de Maio, 3200 — Centro, Campo Grande - MS, CEP 79202-333",
-    "telefone_whatsapp": "(67) 3341-4444",
+    "telefone_whatsapp": HUMAN_PHONE,
     "email": "contato@emporiodamusica.com.br",
     "horario": {
         "segunda_a_sexta": "09:00 às 18:00",
